@@ -3,6 +3,7 @@
 import { resolveText, type MultipleChoiceQuestion, type Language } from "@/types/quiz";
 import { QuestionPrompt } from "@/components/present/QuestionPrompt";
 import { cn } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
@@ -42,7 +43,7 @@ export function MultipleChoiceSlide({
               </span>
               <span
                 className="editor-content prose prose-invert text-xl"
-                dangerouslySetInnerHTML={{ __html: text }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(text) }}
               />
             </div>
           );

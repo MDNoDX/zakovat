@@ -10,6 +10,7 @@ import { NewQuizDialog } from "@/components/dashboard/NewQuizDialog";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { BackupControls } from "@/components/dashboard/BackupControls";
 import { installDemoQuiz } from "@/lib/demo-quiz";
 import { useT } from "@/lib/i18n";
 
@@ -47,6 +48,7 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <ThemeToggle />
+            <BackupControls />
             <Button variant="secondary" onClick={handleLoadDemo} disabled={installingDemo}>
               {installingDemo ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -60,6 +62,10 @@ export default function HomePage() {
             </Button>
           </div>
         </div>
+
+        {mounted && quizzes.length > 0 && (
+          <p className="-mt-8 mb-8 text-xs text-muted-foreground/60">{t("backupHint")}</p>
+        )}
 
         {!mounted ? null : quizzes.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border py-24 text-center">

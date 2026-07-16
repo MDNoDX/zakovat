@@ -106,6 +106,7 @@ export function StageItem({
         <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
           <button
             title={t("settings")}
+            aria-label={t("settings")}
             onClick={() => onSelectStage(stage.id)}
             className="rounded p-1 hover:bg-foreground/10"
           >
@@ -113,6 +114,7 @@ export function StageItem({
           </button>
           <button
             title={t("duplicate")}
+            aria-label={t("duplicate")}
             onClick={() => duplicateStage(quizId, stage.id)}
             className="rounded p-1 hover:bg-foreground/10"
           >
@@ -120,6 +122,7 @@ export function StageItem({
           </button>
           <button
             title={t("delete")}
+            aria-label={t("delete")}
             onClick={() => {
               if (confirm(confirmDeleteStageMessage(name, uiLanguage))) deleteStage(quizId, stage.id);
             }}

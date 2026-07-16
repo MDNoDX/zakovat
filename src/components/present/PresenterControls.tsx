@@ -43,6 +43,7 @@ export function PresenterControls({
         >
           <button
             onClick={onPrev}
+            aria-label={tFor("prevSlide", language)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -54,6 +55,7 @@ export function PresenterControls({
 
           <button
             onClick={onNext}
+            aria-label={tFor("nextSlide", language)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             <ChevronRight className="h-4 w-4" />
@@ -66,6 +68,8 @@ export function PresenterControls({
               <button
                 key={l.code}
                 onClick={() => onLanguageChange(l.code)}
+                aria-label={l.label}
+                aria-pressed={language === l.code}
                 className={cn(
                   "rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors",
                   language === l.code
@@ -83,6 +87,7 @@ export function PresenterControls({
           <button
             onClick={onToggleSound}
             title={tFor(soundEnabled ? "muteSounds" : "unmuteSounds", language)}
+            aria-label={tFor(soundEnabled ? "muteSounds" : "unmuteSounds", language)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             {soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
@@ -92,6 +97,7 @@ export function PresenterControls({
 
           <button
             onClick={onToggleFullscreen}
+            aria-label={tFor(isFullscreen ? "exitFullscreen" : "enterFullscreen", language)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             {isFullscreen ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}

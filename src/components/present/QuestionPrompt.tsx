@@ -2,6 +2,7 @@
 
 import { resolveText, type LocalizedText, type Language } from "@/types/quiz";
 import { cn } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export function QuestionPrompt({
   prompt,
@@ -24,7 +25,7 @@ export function QuestionPrompt({
         size === "large" ? "text-5xl md:text-6xl" : "text-3xl md:text-4xl",
         className
       )}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
     />
   );
 }

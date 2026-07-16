@@ -80,6 +80,7 @@ export function QuestionEditorPanel({
             variant="ghost"
             size="icon"
             title={t("duplicate")}
+            aria-label={t("duplicate")}
             onClick={() => duplicateQuestion(quizId, stageId, question.id)}
           >
             <Copy className="h-4 w-4" />
@@ -88,6 +89,7 @@ export function QuestionEditorPanel({
             variant="ghost"
             size="icon"
             title={t("delete")}
+            aria-label={t("delete")}
             onClick={() => {
               if (confirm(t("confirmDeleteQuestion"))) deleteQuestion(quizId, stageId, question.id);
             }}
@@ -382,6 +384,7 @@ function SingleMediaField({
               onClick={onPick}
               className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
               title={t("replaceMedia")}
+              aria-label={t("replaceMedia")}
             >
               <ImageIcon className="h-3.5 w-3.5" />
             </button>
@@ -389,6 +392,7 @@ function SingleMediaField({
               onClick={onClear}
               className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
               title={t("delete")}
+              aria-label={t("delete")}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -447,6 +451,7 @@ function MultiImageEditor({
               )}
               <button
                 onClick={() => removeAt(i)}
+                aria-label={t("delete")}
                 className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
               >
                 <X className="h-3 w-3" />

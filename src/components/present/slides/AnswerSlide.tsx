@@ -4,6 +4,7 @@ import { useMediaUrl } from "@/lib/media";
 import { resolveText, type Question, type Language } from "@/types/quiz";
 import { MultipleChoiceSlide } from "@/components/present/slides/MultipleChoiceSlide";
 import { tFor } from "@/lib/i18n";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export function AnswerSlide({
   question,
@@ -42,7 +43,7 @@ function GenericAnswer({
       {correct ? (
         <div
           className="editor-content prose prose-invert max-w-3xl text-5xl font-bold leading-tight md:text-6xl"
-          dangerouslySetInnerHTML={{ __html: correct }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(correct) }}
         />
       ) : (
         <p className="text-2xl text-muted-foreground">{tFor("answerNotProvided", language)}</p>
@@ -58,7 +59,7 @@ function GenericAnswer({
       {explanation && (
         <div
           className="editor-content prose prose-invert max-w-2xl text-lg text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: explanation }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(explanation) }}
         />
       )}
     </div>

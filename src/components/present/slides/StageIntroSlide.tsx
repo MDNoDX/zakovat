@@ -2,6 +2,7 @@
 
 import { resolveText, type Stage, type Language } from "@/types/quiz";
 import { tFor } from "@/lib/i18n";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export function StageIntroSlide({ stage, language }: { stage: Stage; language: Language }) {
   const name = resolveText(stage.name, language);
@@ -20,7 +21,7 @@ export function StageIntroSlide({ stage, language }: { stage: Stage; language: L
       {description && (
         <div
           className="editor-content prose prose-invert mt-8 max-w-2xl text-lg text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: description }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }}
         />
       )}
     </div>

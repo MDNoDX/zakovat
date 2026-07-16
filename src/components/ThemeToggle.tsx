@@ -16,6 +16,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       title={theme === "dark" ? "Yorug' rejimga o'tish" : "Qorong'i rejimga o'tish"}
+      aria-label={theme === "dark" ? "Yorug' rejimga o'tish" : "Qorong'i rejimga o'tish"}
       onClick={toggleTheme}
     >
       {!mounted ? null : theme === "dark" ? (

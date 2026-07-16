@@ -8,6 +8,7 @@ import { resolveText, type Quiz, type Language } from "@/types/quiz";
 import { buildSlides, isManualSkippable, type Slide } from "@/lib/slides";
 import { useFullscreen } from "@/lib/use-fullscreen";
 import { useSound } from "@/lib/use-sound";
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { CountdownTimer } from "@/components/present/CountdownTimer";
 import { PresenterControls } from "@/components/present/PresenterControls";
 import { SlideBackground } from "@/components/present/SlideBackground";
@@ -37,6 +38,7 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sound = useSound();
   const isFirstSlideRender = useRef(true);
+  const reducedMotion = usePrefersReducedMotion();
 
   const slide = slides[index];
 
@@ -239,10 +241,10 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
         <AnimatePresence mode="wait">
           <motion.div
             key={index}
-            initial={{ opacity: 0, scale: 0.985 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.01 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.985 }}
+            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 1.01 }}
+            transition={{ duration: reducedMotion ? 0.05 : 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 z-10"
           >
             <SlideRenderer slide={slide} language={language} imageRevealStep={imageRevealStep} />

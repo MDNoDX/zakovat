@@ -59,7 +59,12 @@ export function RichTextEditor({
       Color,
       FontSize,
       TextAlign.configure({ types: ["paragraph"] }),
-      Link.configure({ openOnClick: false, autolink: true }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        protocols: ["http", "https", "mailto"],
+        HTMLAttributes: { rel: "noopener noreferrer nofollow", target: "_blank" },
+      }),
       Placeholder.configure({ placeholder: placeholder || "" }),
     ],
     content: value || "",
@@ -95,6 +100,10 @@ export function RichTextEditor({
       editor.chain().focus().unsetLink().run();
       return;
     }
+    // Belt-and-suspenders: reject anything but http(s)/mailto even though the
+    // Link extension is already configured with an allowlist — a manually
+    // typed "javascript:" URL should never make it into stored content.
+    if (!/^(https?:|mailto:)/i.test(url.trim())) return;
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   };
 

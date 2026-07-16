@@ -95,12 +95,14 @@ export function CountdownTimer({
       <div className="flex items-center gap-1 opacity-0 transition-opacity hover:opacity-100 focus-within:opacity-100">
         <button
           onClick={() => setRunning((r) => !r)}
+          aria-label={running ? "Taymerni to'xtatish" : "Taymerni davom ettirish"}
           className="rounded-full p-1.5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
         >
           {running ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
         </button>
         <button
           onClick={() => setRemaining(seconds)}
+          aria-label="Taymerni qayta boshlash"
           className="rounded-full p-1.5 text-muted-foreground hover:bg-white/10 hover:text-foreground"
         >
           <RotateCcw className="h-3 w-3" />

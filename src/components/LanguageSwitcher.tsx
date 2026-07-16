@@ -19,6 +19,8 @@ export function LanguageSwitcher() {
         <button
           key={l.code}
           onClick={() => setLanguage(l.code)}
+          aria-label={l.label}
+          aria-pressed={mounted && language === l.code}
           className={cn(
             "rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors",
             mounted && language === l.code

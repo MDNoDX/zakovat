@@ -245,6 +245,29 @@ export const UI_STRINGS = {
   // Presenter controls
   muteSounds: { uz: "Ovozlarni o'chirish", ru: "Выключить звук", en: "Mute sounds" },
   unmuteSounds: { uz: "Ovozlarni yoqish", ru: "Включить звук", en: "Unmute sounds" },
+  prevSlide: { uz: "Oldingi slayd", ru: "Предыдущий слайд", en: "Previous slide" },
+  nextSlide: { uz: "Keyingi slayd", ru: "Следующий слайд", en: "Next slide" },
+  enterFullscreen: { uz: "To'liq ekran", ru: "Во весь экран", en: "Enter fullscreen" },
+  exitFullscreen: { uz: "To'liq ekrandan chiqish", ru: "Выйти из полноэкранного режима", en: "Exit fullscreen" },
+
+  // Backup / restore
+  downloadBackup: { uz: "Zaxira yuklab olish", ru: "Скачать резервную копию", en: "Download backup" },
+  restoreBackup: { uz: "Zaxiradan tiklash", ru: "Восстановить из копии", en: "Restore from backup" },
+  backupHint: {
+    uz: "Barcha ma'lumotlar faqat shu brauzerda saqlanadi — vaqti-vaqti bilan zaxira nusxa yuklab oling.",
+    ru: "Все данные хранятся только в этом браузере — периодически скачивайте резервную копию.",
+    en: "All data lives only in this browser — download a backup now and then.",
+  },
+  importSuccess: {
+    uz: "tiklandi",
+    ru: "восстановлено",
+    en: "restored",
+  },
+  importFailed: {
+    uz: "Faylni o'qib bo'lmadi. U to'g'ri Zakovat zaxira fayli ekanini tekshiring.",
+    ru: "Не удалось прочитать файл. Проверьте, что это корректный файл резервной копии Zakovat.",
+    en: "Couldn't read the file. Make sure it's a valid Zakovat backup file.",
+  },
 } satisfies Record<string, Dict>;
 
 export type UiStringKey = keyof typeof UI_STRINGS;

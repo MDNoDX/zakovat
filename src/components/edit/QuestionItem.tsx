@@ -100,7 +100,7 @@ export function QuestionItem({
       <Icon className="h-3.5 w-3.5 shrink-0" />
       <span className="min-w-0 flex-1 truncate">
         {title ? (
-          <span dangerouslySetInnerHTML={{ __html: stripHeavyTags(title) }} />
+          <span>{truncatePreview(title)}</span>
         ) : (
           <span className="italic text-muted-foreground/60">{order}-savol</span>
         )}
@@ -108,6 +108,7 @@ export function QuestionItem({
       <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
         <button
           title={t("duplicate")}
+          aria-label={t("duplicate")}
           onClick={(e) => {
             e.stopPropagation();
             duplicateQuestion(quizId, stageId, question.id);
@@ -118,6 +119,7 @@ export function QuestionItem({
         </button>
         <button
           title={t("delete")}
+          aria-label={t("delete")}
           onClick={(e) => {
             e.stopPropagation();
             if (confirm(t("confirmDeleteQuestion"))) deleteQuestion(quizId, stageId, question.id);
@@ -131,6 +133,9 @@ export function QuestionItem({
   );
 }
 
-function stripHeavyTags(html: string) {
-  return html.replace(/<(?!\/?(b|strong|i|em)\b)[^>]*>/gi, "").slice(0, 80);
+// Sidebar preview only needs plain text — stripping tags entirely avoids any
+// risk of truncating mid-tag and leaving broken/unbalanced markup behind.
+function truncatePreview(html: string) {
+  const text = html.replace(/<[^>]*>/g, "");
+  return text.length > 80 ? `${text.slice(0, 80)}…` : text;
 }
