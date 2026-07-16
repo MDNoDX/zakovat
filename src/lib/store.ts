@@ -139,7 +139,7 @@ function migrateQuizzes(quizzes: unknown): Quiz[] {
           }),
         };
       }),
-    } as Quiz;
+    } as unknown as Quiz;
   });
 }
 
