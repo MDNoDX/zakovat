@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light theme (default CSS variables) */
+  --background: 220 20% 99%;
+  --foreground: 222 25% 12%;
+  --surface: 0 0% 100%;
+  --surface-2: 220 20% 95%;
+  --border: 220 15% 88%;
+  --muted: 220 20% 95%;
+  --muted-foreground: 220 10% 42%;
+}
+
+.dark {
+  --background: 222 24% 6%;
+  --foreground: 210 20% 96%;
+  --surface: 222 20% 9%;
+  --surface-2: 222 18% 12%;
+  --border: 222 15% 18%;
+  --muted: 222 15% 14%;
+  --muted-foreground: 218 10% 60%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html,
+body {
+  height: 100%;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+body {
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.35);
+}
+
+/* thin, elegant scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-content .ProseMirror {
+  outline: none;
+  min-height: 4rem;
+}
+
+.editor-content .ProseMirror p {
+  margin: 0 0 0.5em 0;
+}
+
+.editor-content .ProseMirror a {
+  color: #60a5fa;
+  text-decoration: underline;
+}
+
+.editor-content .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.7;
+}
+
+.font-size-small { font-size: 0.875em; }
+.font-size-normal { font-size: 1em; }
+.font-size-large { font-size: 1.4em; }
+.font-size-xl { font-size: 1.9em; }
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+  100% { box-shadow: 0 0 0 14px rgba(59, 130, 246, 0); }
+}
+.pulse-ring {
+  animation: pulse-ring 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

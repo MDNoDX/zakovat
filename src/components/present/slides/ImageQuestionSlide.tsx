@@ -1,0 +1,29 @@
+"use client";
+
+import type { ImageQuestion, Language } from "@/types/quiz";
+import { useMediaUrl } from "@/lib/media";
+import { QuestionPrompt } from "@/components/present/QuestionPrompt";
+
+export function ImageQuestionSlide({
+  question,
+  language,
+}: {
+  question: ImageQuestion;
+  language: Language;
+}) {
+  const url = useMediaUrl(question.mediaId);
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-8 px-16">
+      <QuestionPrompt prompt={question.prompt} language={language} size="medium" />
+      {url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt=""
+          className="max-h-[60vh] max-w-[70vw] rounded-2xl border border-white/10 object-contain shadow-soft"
+        />
+      )}
+    </div>
+  );
+}
