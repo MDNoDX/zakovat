@@ -8,11 +8,11 @@ import { cn } from "@/lib/utils";
 
 export function MultiImageSlide({
   question,
-  language,
+  languages,
   revealCount,
 }: {
   question: MultiImageQuestion;
-  language: Language;
+  languages: Language[];
   /** How many images (in order) should currently be visible. */
   revealCount: number;
 }) {
@@ -21,7 +21,7 @@ export function MultiImageSlide({
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-12 py-8">
-      <QuestionPrompt prompt={question.prompt} language={language} size="medium" />
+      <QuestionPrompt prompt={question.prompt} languages={languages} size="medium" />
       <div className="h-[62vh] w-full max-w-5xl">
         <Collage mediaIds={question.mediaIds} count={count} revealCount={revealCount} />
       </div>

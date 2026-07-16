@@ -5,14 +5,14 @@ import { QuestionPrompt } from "@/components/present/QuestionPrompt";
 
 export function TextQuestionSlide({
   question,
-  language,
+  languages,
 }: {
   question: TextQuestion;
-  language: Language;
+  languages: Language[];
 }) {
   return (
     <div className="flex h-full w-full items-center justify-center px-16">
-      <QuestionPrompt prompt={question.prompt} language={language} />
+      <QuestionPrompt prompt={question.prompt} languages={languages} />
     </div>
   );
 }

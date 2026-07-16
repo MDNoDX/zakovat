@@ -1,52 +1,67 @@
 "use client";
 
 import { useMediaUrl } from "@/lib/media";
-import { resolveText, type Question, type Language } from "@/types/quiz";
+import { isLocalizedTextEmpty, type Question, type Language } from "@/types/quiz";
 import { MultipleChoiceSlide } from "@/components/present/slides/MultipleChoiceSlide";
+import { MultiLangText } from "@/components/present/MultiLangText";
 import { tFor } from "@/lib/i18n";
-import { sanitizeHtml } from "@/lib/sanitize-html";
 
 export function AnswerSlide({
   question,
-  language,
+  languages,
   indexInStage,
+  showExplanation,
 }: {
   question: Question;
-  language: Language;
+  languages: Language[];
   indexInStage: number;
+  showExplanation: boolean;
 }) {
   if (question.type === "multiple-choice") {
-    return <MultipleChoiceSlide question={question} language={language} revealed />;
+    return <MultipleChoiceSlide question={question} languages={languages} revealed />;
   }
 
-  return <GenericAnswer question={question} language={language} indexInStage={indexInStage} />;
+  return (
+    <GenericAnswer
+      question={question}
+      languages={languages}
+      indexInStage={indexInStage}
+      showExplanation={showExplanation}
+    />
+  );
 }
 
 function GenericAnswer({
   question,
-  language,
+  languages,
   indexInStage,
+  showExplanation,
 }: {
   question: Question;
-  language: Language;
+  languages: Language[];
   indexInStage: number;
+  showExplanation: boolean;
 }) {
   const url = useMediaUrl(question.answer.mediaId);
-  const correct = resolveText(question.answer.correctText, language);
-  const explanation = resolveText(question.answer.explanation, language);
+  const hasCorrect = !isLocalizedTextEmpty(question.answer.correctText);
+  const hasExplanation = !isLocalizedTextEmpty(question.answer.explanation);
+  const primaryLanguage = languages[0] ?? "uz";
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-16 text-center">
       <p className="text-sm font-semibold uppercase tracking-[0.4em] text-accent">
-        {indexInStage + 1}-{tFor("questionWord", language)} &middot; {tFor("correctAnswerLabel", language)}
+        {indexInStage + 1}-{tFor("questionWord", primaryLanguage)} &middot;{" "}
+        {tFor("correctAnswerLabel", primaryLanguage)}
       </p>
-      {correct ? (
-        <div
-          className="editor-content prose prose-invert max-w-3xl text-5xl font-bold leading-tight md:text-6xl"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(correct) }}
+      {hasCorrect ? (
+        <MultiLangText
+          text={question.answer.correctText}
+          languages={languages}
+          size="hero"
+          weight="font-bold"
         />
       ) : (
-        <p className="text-2xl text-muted-foreground">{tFor("answerNotProvided", language)}</p>
+        <p className="text-2xl text-muted-foreground">{tFor("answerNotProvided", primaryLanguage)}</p>
       )}
       {url && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -56,11 +71,19 @@ function GenericAnswer({
           className="max-h-[40vh] max-w-[60vw] rounded-2xl border border-white/10 object-contain"
         />
       )}
-      {explanation && (
-        <div
-          className="editor-content prose prose-invert max-w-2xl text-lg text-muted-foreground"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(explanation) }}
+      {hasExplanation && showExplanation && (
+        <MultiLangText
+          text={question.answer.explanation}
+          languages={languages}
+          size="small"
+          weight="font-normal"
+          proseClassName="max-w-2xl text-muted-foreground"
         />
+      )}
+      {hasExplanation && !showExplanation && (
+        <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground/50">
+          {tFor("pressEForExplanation", primaryLanguage)}
+        </p>
       )}
     </div>
   );

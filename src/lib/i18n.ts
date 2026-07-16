@@ -268,6 +268,11 @@ export const UI_STRINGS = {
     ru: "Не удалось прочитать файл. Проверьте, что это корректный файл резервной копии Zakovat.",
     en: "Couldn't read the file. Make sure it's a valid Zakovat backup file.",
   },
+  pressEForExplanation: {
+    uz: "Izoh uchun \"E\" tugmasini bosing",
+    ru: "Нажмите «E» для пояснения",
+    en: "Press \"E\" for the explanation",
+  },
 } satisfies Record<string, Dict>;
 
 export type UiStringKey = keyof typeof UI_STRINGS;

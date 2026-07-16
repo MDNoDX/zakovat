@@ -29,9 +29,14 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
 
   const slides = useMemo(() => buildSlides(quiz), [quiz]);
   const [index, setIndex] = useState(0);
-  const [language, setLanguage] = useState<Language>(quiz.defaultLanguage);
+  // Which language(s) the moderator wants shown right now — any combination,
+  // changeable at any time with no reload. A question written in only one
+  // language always still shows (see MultiLangText's fallback), so this
+  // never produces a blank slide.
+  const [visibleLanguages, setVisibleLanguages] = useState<Language[]>([quiz.defaultLanguage]);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [showExplanation, setShowExplanation] = useState(false);
   // How many collage images are currently visible on a "sequential" multi-image
   // slide. Resets to 1 whenever the slide changes.
   const [imageRevealStep, setImageRevealStep] = useState(1);
@@ -41,9 +46,11 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   const reducedMotion = usePrefersReducedMotion();
 
   const slide = slides[index];
+  const primaryLanguage = visibleLanguages[0] ?? quiz.defaultLanguage;
 
   useEffect(() => {
     setImageRevealStep(1);
+    setShowExplanation(false);
   }, [index]);
 
   // Play a short transition tone whenever the slide changes — a distinct
@@ -60,6 +67,16 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
     else sound.playSlide();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
+
+  const toggleLanguage = useCallback((lang: Language) => {
+    setVisibleLanguages((prev) => {
+      if (prev.includes(lang)) {
+        const next = prev.filter((l) => l !== lang);
+        return next.length > 0 ? next : prev; // never allow an empty selection
+      }
+      return [...prev, lang];
+    });
+  }, []);
 
   function sequentialImagesRemaining(target: Slide | undefined, step: number) {
     if (!target || target.kind !== "question" || target.question.type !== "multi-image") {
@@ -150,9 +167,13 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         goPrev();
-      } else if (e.code === "Space") {
+      } else if (e.code === "Space" || e.key === "Enter") {
         e.preventDefault();
         reveal();
+      } else if (e.key.toLowerCase() === "e") {
+        setShowExplanation((v) => !v);
+      } else if (e.key.toLowerCase() === "r") {
+        goPrev();
       } else if (e.key.toLowerCase() === "f") {
         toggle();
       } else if (e.key === "Escape") {
@@ -168,15 +189,15 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   if (!slide) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-background text-foreground">
-        <p className="text-muted-foreground">{tFor("noQuestionsYet", language)}</p>
+        <p className="text-muted-foreground">{tFor("noQuestionsYet", primaryLanguage)}</p>
         <Link href={`/edit/${quiz.id}`} className="text-accent hover:underline">
-          {tFor("backToEditing", language)}
+          {tFor("backToEditing", primaryLanguage)}
         </Link>
       </div>
     );
   }
 
-  const stageName = resolveText(slide.stage.name, language);
+  const stageName = resolveText(slide.stage.name, primaryLanguage);
 
   const questionMeta =
     slide.kind === "question" || slide.kind === "answer"
@@ -219,7 +240,7 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
               <Link
                 href={`/edit/${quiz.id}`}
                 className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white"
-                title={tFor("backToEditing", language)}
+                title={tFor("backToEditing", primaryLanguage)}
               >
                 <X className="h-4 w-4" />
               </Link>
@@ -247,7 +268,12 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
             transition={{ duration: reducedMotion ? 0.05 : 0.35, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 z-10"
           >
-            <SlideRenderer slide={slide} language={language} imageRevealStep={imageRevealStep} />
+            <SlideRenderer
+              slide={slide}
+              languages={visibleLanguages}
+              imageRevealStep={imageRevealStep}
+              showExplanation={showExplanation}
+            />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -256,8 +282,8 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
         visible={controlsVisible}
         current={index}
         total={slides.length}
-        language={language}
-        onLanguageChange={setLanguage}
+        visibleLanguages={visibleLanguages}
+        onToggleLanguage={toggleLanguage}
         onPrev={goPrev}
         onNext={goNext}
         isFullscreen={isFullscreen}
@@ -271,36 +297,44 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
 
 function SlideRenderer({
   slide,
-  language,
+  languages,
   imageRevealStep,
+  showExplanation,
 }: {
   slide: Slide;
-  language: Language;
+  languages: Language[];
   imageRevealStep: number;
+  showExplanation: boolean;
 }) {
+  const primaryLanguage = languages[0] ?? "uz";
   switch (slide.kind) {
     case "stage-intro":
-      return <StageIntroSlide stage={slide.stage} language={language} />;
+      return <StageIntroSlide stage={slide.stage} languages={languages} />;
     case "stage-end":
-      return <StageEndSlide language={language} />;
+      return <StageEndSlide language={primaryLanguage} />;
     case "answer":
       return (
-        <AnswerSlide question={slide.question} language={language} indexInStage={slide.indexInStage} />
+        <AnswerSlide
+          question={slide.question}
+          languages={languages}
+          indexInStage={slide.indexInStage}
+          showExplanation={showExplanation}
+        />
       );
     case "question": {
       const { question } = slide;
       switch (question.type) {
         case "text":
-          return <TextQuestionSlide question={question} language={language} />;
+          return <TextQuestionSlide question={question} languages={languages} />;
         case "multiple-choice":
-          return <MultipleChoiceSlide question={question} language={language} />;
+          return <MultipleChoiceSlide question={question} languages={languages} />;
         case "image":
-          return <ImageQuestionSlide question={question} language={language} />;
+          return <ImageQuestionSlide question={question} languages={languages} />;
         case "multi-image":
           return (
             <MultiImageSlide
               question={question}
-              language={language}
+              languages={languages}
               revealCount={
                 question.revealStyle === "sequential"
                   ? imageRevealStep
@@ -311,7 +345,7 @@ function SlideRenderer({
         case "music":
           return <MusicQuestionSlide question={question} />;
         case "video":
-          return <VideoQuestionSlide question={question} language={language} />;
+          return <VideoQuestionSlide question={question} languages={languages} />;
       }
     }
   }

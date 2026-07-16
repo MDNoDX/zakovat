@@ -11,7 +11,7 @@ import {
   Trash2,
   Settings2,
 } from "lucide-react";
-import { resolveText, type Stage } from "@/types/quiz";
+import { resolveText, localizedTextMatches, type Stage } from "@/types/quiz";
 import { useQuizStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { QuestionItem } from "@/components/edit/QuestionItem";
@@ -30,6 +30,7 @@ export function StageItem({
   selection,
   onSelectStage,
   onSelectQuestion,
+  searchQuery,
 }: {
   quizId: string;
   stage: Stage;
@@ -37,6 +38,7 @@ export function StageItem({
   selection: { stageId: string | null; questionId: string | null };
   onSelectStage: (stageId: string) => void;
   onSelectQuestion: (stageId: string, questionId: string) => void;
+  searchQuery?: string;
 }) {
   const [expanded, setExpanded] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
@@ -77,6 +79,12 @@ export function StageItem({
   const isStageActive = selection.stageId === stage.id && !selection.questionId;
   const name = resolveText(stage.name, "uz") || `${index + 1}-bosqich`;
 
+  const isOpen = searchQuery ? true : expanded;
+  const indexedQuestions = stage.questions.map((q, originalIndex) => ({ q, originalIndex }));
+  const visibleQuestions = searchQuery
+    ? indexedQuestions.filter(({ q }) => localizedTextMatches(q.prompt, searchQuery))
+    : indexedQuestions;
+
   return (
     <div ref={ref} className={cn(isDragging && "opacity-40")}>
       <div
@@ -91,7 +99,7 @@ export function StageItem({
           className="shrink-0 rounded p-0.5 hover:bg-foreground/10"
         >
           <ChevronRight
-            className={cn("h-3.5 w-3.5 transition-transform", expanded && "rotate-90")}
+            className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-90")}
           />
         </button>
         <button
@@ -134,7 +142,7 @@ export function StageItem({
       </div>
 
       <AnimatePresence initial={false}>
-        {expanded && (
+        {isOpen && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -143,28 +151,30 @@ export function StageItem({
             className="ml-4 overflow-hidden border-l border-border pl-2"
           >
             <div className="flex flex-col gap-0.5 py-1">
-              {stage.questions.map((q, qIndex) => (
+              {visibleQuestions.map(({ q, originalIndex }) => (
                 <QuestionItem
                   key={q.id}
                   quizId={quizId}
                   stageId={stage.id}
                   question={q}
-                  index={qIndex}
-                  order={qIndex + 1}
+                  index={originalIndex}
+                  order={originalIndex + 1}
                   isActive={selection.questionId === q.id}
                   onSelect={() => onSelectQuestion(stage.id, q.id)}
                 />
               ))}
-              <AddQuestionMenu
-                onPick={(type) => {
-                  const id = addQuestion(quizId, stage.id, type);
-                  onSelectQuestion(stage.id, id);
-                }}
-              >
-                <button className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-foreground/5 hover:text-foreground">
-                  <Plus className="h-3 w-3" /> {t("addQuestion")}
-                </button>
-              </AddQuestionMenu>
+              {!searchQuery && (
+                <AddQuestionMenu
+                  onPick={(type) => {
+                    const id = addQuestion(quizId, stage.id, type);
+                    onSelectQuestion(stage.id, id);
+                  }}
+                >
+                  <button className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-foreground/5 hover:text-foreground">
+                    <Plus className="h-3 w-3" /> {t("addQuestion")}
+                  </button>
+                </AddQuestionMenu>
+              )}
             </div>
           </motion.div>
         )}

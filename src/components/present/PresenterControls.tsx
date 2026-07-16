@@ -10,8 +10,8 @@ export function PresenterControls({
   visible,
   current,
   total,
-  language,
-  onLanguageChange,
+  visibleLanguages,
+  onToggleLanguage,
   onPrev,
   onNext,
   isFullscreen,
@@ -22,8 +22,9 @@ export function PresenterControls({
   visible: boolean;
   current: number;
   total: number;
-  language: Language;
-  onLanguageChange: (l: Language) => void;
+  /** Any combination of languages can be active at once — this isn't an exclusive picker. */
+  visibleLanguages: Language[];
+  onToggleLanguage: (l: Language) => void;
   onPrev: () => void;
   onNext: () => void;
   isFullscreen: boolean;
@@ -31,6 +32,8 @@ export function PresenterControls({
   soundEnabled: boolean;
   onToggleSound: () => void;
 }) {
+  const primaryLanguage = visibleLanguages[0] ?? "uz";
+
   return (
     <AnimatePresence>
       {visible && (
@@ -43,7 +46,7 @@ export function PresenterControls({
         >
           <button
             onClick={onPrev}
-            aria-label={tFor("prevSlide", language)}
+            aria-label={tFor("prevSlide", primaryLanguage)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -55,7 +58,7 @@ export function PresenterControls({
 
           <button
             onClick={onNext}
-            aria-label={tFor("nextSlide", language)}
+            aria-label={tFor("nextSlide", primaryLanguage)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             <ChevronRight className="h-4 w-4" />
@@ -63,31 +66,34 @@ export function PresenterControls({
 
           <div className="mx-1 h-4 w-px bg-white/10" />
 
+          {/* Language View: any combination can be toggled on at once — RU only,
+              EN only, RU+EN together, etc. — with no reload and no page change. */}
           <div className="flex items-center gap-0.5 rounded-full bg-white/5 p-0.5">
-            {LANGUAGES.map((l) => (
-              <button
-                key={l.code}
-                onClick={() => onLanguageChange(l.code)}
-                aria-label={l.label}
-                aria-pressed={language === l.code}
-                className={cn(
-                  "rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors",
-                  language === l.code
-                    ? "bg-accent text-white"
-                    : "text-white/50 hover:text-white"
-                )}
-              >
-                {l.code}
-              </button>
-            ))}
+            {LANGUAGES.map((l) => {
+              const active = visibleLanguages.includes(l.code);
+              return (
+                <button
+                  key={l.code}
+                  onClick={() => onToggleLanguage(l.code)}
+                  aria-label={l.label}
+                  aria-pressed={active}
+                  className={cn(
+                    "rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide transition-colors",
+                    active ? "bg-accent text-white" : "text-white/50 hover:text-white"
+                  )}
+                >
+                  {l.code}
+                </button>
+              );
+            })}
           </div>
 
           <div className="mx-1 h-4 w-px bg-white/10" />
 
           <button
             onClick={onToggleSound}
-            title={tFor(soundEnabled ? "muteSounds" : "unmuteSounds", language)}
-            aria-label={tFor(soundEnabled ? "muteSounds" : "unmuteSounds", language)}
+            title={tFor(soundEnabled ? "muteSounds" : "unmuteSounds", primaryLanguage)}
+            aria-label={tFor(soundEnabled ? "muteSounds" : "unmuteSounds", primaryLanguage)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             {soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
@@ -97,7 +103,7 @@ export function PresenterControls({
 
           <button
             onClick={onToggleFullscreen}
-            aria-label={tFor(isFullscreen ? "exitFullscreen" : "enterFullscreen", language)}
+            aria-label={tFor(isFullscreen ? "exitFullscreen" : "enterFullscreen", primaryLanguage)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
           >
             {isFullscreen ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}

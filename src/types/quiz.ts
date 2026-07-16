@@ -57,6 +57,14 @@ export function unusedLanguages(t: LocalizedText | undefined): Language[] {
   return LANGUAGES.map((l) => l.code).filter((code) => !used.has(code));
 }
 
+/** Case-insensitive substring search across every language variant of a field. */
+export function localizedTextMatches(t: LocalizedText | undefined, query: string): boolean {
+  if (!query.trim()) return true;
+  if (!t) return false;
+  const needle = query.trim().toLowerCase();
+  return t.some((v) => v.content.replace(/<[^>]*>/g, " ").toLowerCase().includes(needle));
+}
+
 /** How answers are revealed within a stage. */
 export type RevealMode = "after-each" | "end-of-stage" | "manual";
 

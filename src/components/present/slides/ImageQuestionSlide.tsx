@@ -6,16 +6,16 @@ import { QuestionPrompt } from "@/components/present/QuestionPrompt";
 
 export function ImageQuestionSlide({
   question,
-  language,
+  languages,
 }: {
   question: ImageQuestion;
-  language: Language;
+  languages: Language[];
 }) {
   const url = useMediaUrl(question.mediaId);
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-8 px-16">
-      <QuestionPrompt prompt={question.prompt} language={language} size="medium" />
+      <QuestionPrompt prompt={question.prompt} languages={languages} size="medium" />
       {url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img

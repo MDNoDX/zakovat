@@ -1,31 +1,18 @@
 "use client";
 
-import { resolveText, type LocalizedText, type Language } from "@/types/quiz";
-import { cn } from "@/lib/utils";
-import { sanitizeHtml } from "@/lib/sanitize-html";
+import type { LocalizedText, Language } from "@/types/quiz";
+import { MultiLangText, type PromptSize } from "@/components/present/MultiLangText";
 
 export function QuestionPrompt({
   prompt,
-  language,
-  size = "large",
+  languages,
+  size = "hero",
   className,
 }: {
   prompt: LocalizedText;
-  language: Language;
-  size?: "large" | "medium";
+  languages: Language[];
+  size?: PromptSize;
   className?: string;
 }) {
-  const html = resolveText(prompt, language);
-  if (!html) return null;
-
-  return (
-    <div
-      className={cn(
-        "editor-content prose prose-invert max-w-4xl text-center font-semibold leading-tight tracking-tight",
-        size === "large" ? "text-5xl md:text-6xl" : "text-3xl md:text-4xl",
-        className
-      )}
-      dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
-    />
-  );
+  return <MultiLangText text={prompt} languages={languages} size={size} className={className} layout="stack" />;
 }
