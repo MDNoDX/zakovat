@@ -1,6 +1,6 @@
 "use client";
 
-import type { LocalizedText, Language } from "@/types/quiz";
+import { resolveText, type LocalizedText, type Language } from "@/types/quiz";
 import { cn } from "@/lib/utils";
 
 export function QuestionPrompt({
@@ -14,7 +14,7 @@ export function QuestionPrompt({
   size?: "large" | "medium";
   className?: string;
 }) {
-  const html = prompt[language] || prompt.uz || prompt.ru || prompt.en;
+  const html = resolveText(prompt, language);
   if (!html) return null;
 
   return (

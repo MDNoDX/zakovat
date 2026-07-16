@@ -3,8 +3,8 @@
 import { useQuizStore } from "@/lib/store";
 import { LocalizedTextInput } from "@/components/editor/LocalizedTextInput";
 import { LocalizedRichTextEditor } from "@/components/editor/LocalizedRichTextEditor";
-import { Select } from "@/components/ui/select";
 import { REVEAL_MODES, type Stage } from "@/types/quiz";
+import { useT, stageQuestionInfoParts, useUiLanguageStore, revealModeLabel, revealModeDescription } from "@/lib/i18n";
 
 export function StageSettingsPanel({
   quizId,
@@ -14,32 +14,35 @@ export function StageSettingsPanel({
   stage: Stage;
 }) {
   const updateStage = useQuizStore((s) => s.updateStage);
+  const t = useT();
+  const uiLanguage = useUiLanguageStore((s) => s.language);
+  const infoParts = stageQuestionInfoParts(uiLanguage);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8 px-10 py-10">
       <div>
         <p className="mb-1 text-xs font-medium uppercase tracking-widest text-accent">
-          Bosqich sozlamalari
+          {t("stageSettingsLabel")}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">Kirish slaydi va qoidalar</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("introAndRules")}</h1>
       </div>
 
       <LocalizedTextInput
-        label="Bosqich nomi"
+        label={t("stageNameLabel")}
         value={stage.name}
-        placeholder="Masalan: 1-BOSQICH"
+        placeholder={t("stageNamePlaceholder")}
         onChange={(name) => updateStage(quizId, stage.id, { name })}
       />
 
       <LocalizedRichTextEditor
-        label="Tavsif / qoidalar"
+        label={t("descRulesLabel")}
         value={stage.description}
-        placeholder="Ushbu bosqich qoidalarini yozing..."
+        placeholder={t("descRulesPlaceholder")}
         onChange={(description) => updateStage(quizId, stage.id, { description })}
       />
 
       <div>
-        <p className="mb-2 text-xs font-medium text-muted-foreground">Javob ochilish tartibi</p>
+        <p className="mb-2 text-xs font-medium text-muted-foreground">{t("revealOrderLabel")}</p>
         <div className="flex flex-col gap-2">
           {REVEAL_MODES.map((mode) => (
             <button
@@ -51,17 +54,18 @@ export function StageSettingsPanel({
                   : "border-border bg-surface-2 hover:bg-foreground/5"
               }`}
             >
-              <div className="text-sm font-medium">{mode.label}</div>
-              <div className="text-xs text-muted-foreground">{mode.description}</div>
+              <div className="text-sm font-medium">{revealModeLabel(mode.value, uiLanguage)}</div>
+              <div className="text-xs text-muted-foreground">
+                {revealModeDescription(mode.value, uiLanguage)}
+              </div>
             </button>
           ))}
         </div>
       </div>
 
       <div className="rounded-xl border border-dashed border-border p-4 text-xs text-muted-foreground">
-        Ushbu bosqichda <span className="text-foreground">{stage.questions.length}</span> ta
-        savol bor. Savol qo&apos;shish yoki tartiblash uchun chapdagi ro&apos;yxatdan
-        foydalaning.
+        {infoParts.before} <span className="text-foreground">{stage.questions.length}</span>{" "}
+        {infoParts.after}
       </div>
     </div>
   );

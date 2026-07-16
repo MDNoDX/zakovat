@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuizStore } from "@/lib/store";
 import { StageItem } from "@/components/edit/StageItem";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
 
 export function Sidebar({
   quizId,
@@ -21,6 +22,7 @@ export function Sidebar({
 }) {
   const quiz = useQuizStore((s) => s.quizzes.find((q) => q.id === quizId));
   const addStage = useQuizStore((s) => s.addStage);
+  const t = useT();
 
   if (!quiz) return null;
 
@@ -54,13 +56,13 @@ export function Sidebar({
           onClick={() => onSelectStage(addStage(quizId))}
           className="mt-2 flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
         >
-          <Plus className="h-3.5 w-3.5" /> Bosqich qo&apos;shish
+          <Plus className="h-3.5 w-3.5" /> {t("addStage")}
         </button>
       </div>
 
       <div className="border-t border-border p-2">
         <Button variant="ghost" size="sm" className="w-full justify-start" onClick={onOpenMediaLibrary}>
-          <ImageIcon className="h-3.5 w-3.5" /> Media kutubxona
+          <ImageIcon className="h-3.5 w-3.5" /> {t("mediaLibrary")}
         </Button>
       </div>
     </aside>

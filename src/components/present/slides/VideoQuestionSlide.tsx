@@ -1,7 +1,7 @@
 "use client";
 
 import { useMediaUrl } from "@/lib/media";
-import type { VideoQuestion, Language } from "@/types/quiz";
+import { resolveText, type VideoQuestion, type Language } from "@/types/quiz";
 import { QuestionPrompt } from "@/components/present/QuestionPrompt";
 
 export function VideoQuestionSlide({
@@ -12,9 +12,7 @@ export function VideoQuestionSlide({
   language: Language;
 }) {
   const url = useMediaUrl(question.mediaId);
-  const hasPrompt = Boolean(
-    question.prompt[language] || question.prompt.uz || question.prompt.ru || question.prompt.en
-  );
+  const hasPrompt = Boolean(resolveText(question.prompt, language));
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-10">

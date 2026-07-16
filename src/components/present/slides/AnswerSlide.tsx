@@ -1,8 +1,9 @@
 "use client";
 
 import { useMediaUrl } from "@/lib/media";
-import type { Question, Language } from "@/types/quiz";
+import { resolveText, type Question, type Language } from "@/types/quiz";
 import { MultipleChoiceSlide } from "@/components/present/slides/MultipleChoiceSlide";
+import { tFor } from "@/lib/i18n";
 
 export function AnswerSlide({
   question,
@@ -30,18 +31,13 @@ function GenericAnswer({
   indexInStage: number;
 }) {
   const url = useMediaUrl(question.answer.mediaId);
-  const correct =
-    question.answer.correctText[language] ||
-    question.answer.correctText.uz ||
-    question.answer.correctText.ru ||
-    question.answer.correctText.en;
-  const explanation =
-    question.answer.explanation?.[language] || question.answer.explanation?.uz;
+  const correct = resolveText(question.answer.correctText, language);
+  const explanation = resolveText(question.answer.explanation, language);
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-16 text-center">
       <p className="text-sm font-semibold uppercase tracking-[0.4em] text-accent">
-        {indexInStage + 1}-savol &middot; To&apos;g&apos;ri javob
+        {indexInStage + 1}-{tFor("questionWord", language)} &middot; {tFor("correctAnswerLabel", language)}
       </p>
       {correct ? (
         <div
@@ -49,7 +45,7 @@ function GenericAnswer({
           dangerouslySetInnerHTML={{ __html: correct }}
         />
       ) : (
-        <p className="text-2xl text-muted-foreground">Javob kiritilmagan</p>
+        <p className="text-2xl text-muted-foreground">{tFor("answerNotProvided", language)}</p>
       )}
       {url && (
         // eslint-disable-next-line @next/next/no-img-element

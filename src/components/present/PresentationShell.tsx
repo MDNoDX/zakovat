@@ -4,9 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { X } from "lucide-react";
-import type { Quiz, Language } from "@/types/quiz";
+import { resolveText, type Quiz, type Language } from "@/types/quiz";
 import { buildSlides, isManualSkippable, type Slide } from "@/lib/slides";
 import { useFullscreen } from "@/lib/use-fullscreen";
+import { useSound } from "@/lib/use-sound";
 import { CountdownTimer } from "@/components/present/CountdownTimer";
 import { PresenterControls } from "@/components/present/PresenterControls";
 import { SlideBackground } from "@/components/present/SlideBackground";
@@ -19,6 +20,7 @@ import { MultiImageSlide } from "@/components/present/slides/MultiImageSlide";
 import { MusicQuestionSlide } from "@/components/present/slides/MusicQuestionSlide";
 import { VideoQuestionSlide } from "@/components/present/slides/VideoQuestionSlide";
 import { AnswerSlide } from "@/components/present/slides/AnswerSlide";
+import { tFor } from "@/lib/i18n";
 
 export function PresentationShell({ quiz }: { quiz: Quiz }) {
   const shellRef = useRef<HTMLDivElement>(null);
@@ -33,11 +35,28 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   // slide. Resets to 1 whenever the slide changes.
   const [imageRevealStep, setImageRevealStep] = useState(1);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sound = useSound();
+  const isFirstSlideRender = useRef(true);
 
   const slide = slides[index];
 
   useEffect(() => {
     setImageRevealStep(1);
+  }, [index]);
+
+  // Play a short transition tone whenever the slide changes — a distinct
+  // one for stage intros vs. answer reveals vs. ordinary question slides.
+  // Skipped on first mount since nothing actually "transitioned" yet.
+  useEffect(() => {
+    if (isFirstSlideRender.current) {
+      isFirstSlideRender.current = false;
+      return;
+    }
+    if (!slide) return;
+    if (slide.kind === "stage-intro") sound.playStage();
+    else if (slide.kind === "answer") sound.playReveal();
+    else sound.playSlide();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
   function sequentialImagesRemaining(target: Slide | undefined, step: number) {
@@ -147,16 +166,15 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   if (!slide) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-background text-foreground">
-        <p className="text-muted-foreground">Ushbu zakovatda hali savollar yo&apos;q.</p>
+        <p className="text-muted-foreground">{tFor("noQuestionsYet", language)}</p>
         <Link href={`/edit/${quiz.id}`} className="text-accent hover:underline">
-          Tahrirlashga qaytish
+          {tFor("backToEditing", language)}
         </Link>
       </div>
     );
   }
 
-  const stageName =
-    slide.stage.name[language] || slide.stage.name.uz || slide.stage.name.ru || slide.stage.name.en;
+  const stageName = resolveText(slide.stage.name, language);
 
   const questionMeta =
     slide.kind === "question" || slide.kind === "answer"
@@ -199,7 +217,7 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
               <Link
                 href={`/edit/${quiz.id}`}
                 className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white"
-                title="Tahrirlashga qaytish"
+                title={tFor("backToEditing", language)}
               >
                 <X className="h-4 w-4" />
               </Link>
@@ -242,6 +260,8 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
         onNext={goNext}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggle}
+        soundEnabled={sound.enabled}
+        onToggleSound={sound.toggle}
       />
     </div>
   );
@@ -260,7 +280,7 @@ function SlideRenderer({
     case "stage-intro":
       return <StageIntroSlide stage={slide.stage} language={language} />;
     case "stage-end":
-      return <StageEndSlide />;
+      return <StageEndSlide language={language} />;
     case "answer":
       return (
         <AnswerSlide question={slide.question} language={language} indexInStage={slide.indexInStage} />

@@ -10,7 +10,8 @@ import {
   Music,
   Video,
 } from "lucide-react";
-import { QUESTION_TYPE_META, type QuestionType } from "@/types/quiz";
+import type { QuestionType } from "@/types/quiz";
+import { questionTypeLabel, questionTypeDescription, useUiLanguageStore } from "@/lib/i18n";
 
 const TYPE_ICON: Record<QuestionType, React.ElementType> = {
   text: Type,
@@ -49,6 +50,7 @@ export function AddQuestionMenu({
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const uiLanguage = useUiLanguageStore((s) => s.language);
 
   function openMenu() {
     const rect = triggerRef.current?.getBoundingClientRect();
@@ -100,7 +102,6 @@ export function AddQuestionMenu({
           >
             {ORDER.map((type) => {
               const Icon = TYPE_ICON[type];
-              const meta = QUESTION_TYPE_META[type];
               return (
                 <button
                   key={type}
@@ -114,9 +115,9 @@ export function AddQuestionMenu({
                     <Icon className="h-3.5 w-3.5" />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium">{meta.label}</div>
+                    <div className="text-sm font-medium">{questionTypeLabel(type, uiLanguage)}</div>
                     <div className="truncate text-[11px] text-muted-foreground">
-                      {meta.description}
+                      {questionTypeDescription(type, uiLanguage)}
                     </div>
                   </div>
                 </button>

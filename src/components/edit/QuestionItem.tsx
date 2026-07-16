@@ -13,9 +13,10 @@ import {
   Copy,
   Trash2,
 } from "lucide-react";
-import type { Question } from "@/types/quiz";
+import { resolveText, type Question } from "@/types/quiz";
 import { useQuizStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 const TYPE_ICON: Record<Question["type"], React.ElementType> = {
   text: Type,
@@ -53,6 +54,7 @@ export function QuestionItem({
   const reorderQuestions = useQuizStore((s) => s.reorderQuestions);
   const deleteQuestion = useQuizStore((s) => s.deleteQuestion);
   const duplicateQuestion = useQuizStore((s) => s.duplicateQuestion);
+  const t = useT();
 
   const [, drop] = useDrop<DragItem>({
     accept: "QUESTION",
@@ -82,7 +84,7 @@ export function QuestionItem({
   drag(drop(ref));
 
   const Icon = TYPE_ICON[question.type];
-  const title = question.prompt.uz || question.prompt.ru || question.prompt.en;
+  const title = resolveText(question.prompt, "uz");
 
   return (
     <div
@@ -105,7 +107,7 @@ export function QuestionItem({
       </span>
       <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
         <button
-          title="Nusxalash"
+          title={t("duplicate")}
           onClick={(e) => {
             e.stopPropagation();
             duplicateQuestion(quizId, stageId, question.id);
@@ -115,10 +117,10 @@ export function QuestionItem({
           <Copy className="h-3 w-3" />
         </button>
         <button
-          title="O'chirish"
+          title={t("delete")}
           onClick={(e) => {
             e.stopPropagation();
-            if (confirm("Savolni o'chirasizmi?")) deleteQuestion(quizId, stageId, question.id);
+            if (confirm(t("confirmDeleteQuestion"))) deleteQuestion(quizId, stageId, question.id);
           }}
           className="rounded p-1 hover:bg-red-500/10 hover:text-red-400"
         >

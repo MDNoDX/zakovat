@@ -21,7 +21,6 @@ import { useMediaUrl } from "@/lib/media";
 import {
   COLLAGE_REVEAL_STYLES,
   emptyLocalizedText,
-  QUESTION_TYPE_META,
   TIMER_OPTIONS,
   type CollageRevealStyle,
   type ImageQuestion,
@@ -38,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { MediaLibraryDialog } from "@/components/edit/MediaLibraryDialog";
 import { MediaThumb } from "@/components/edit/MediaThumb";
 import { cn } from "@/lib/utils";
+import { useT, questionTypeLabel, collageRevealLabel, collageRevealDescription, useUiLanguageStore } from "@/lib/i18n";
 
 type MediaTarget = null | "primary" | "answer" | "multi-add" | "background";
 
@@ -54,8 +54,9 @@ export function QuestionEditorPanel({
   const deleteQuestion = useQuizStore((s) => s.deleteQuestion);
   const duplicateQuestion = useQuizStore((s) => s.duplicateQuestion);
   const [mediaTarget, setMediaTarget] = useState<MediaTarget>(null);
+  const t = useT();
+  const uiLanguage = useUiLanguageStore((s) => s.language);
 
-  const meta = QUESTION_TYPE_META[question.type];
   const supportsBackground = question.type !== "music";
 
   function patch(p: QuestionPatch) {
@@ -70,15 +71,15 @@ export function QuestionEditorPanel({
       <div className="flex items-start justify-between">
         <div>
           <p className="mb-1 text-xs font-medium uppercase tracking-widest text-accent">
-            {meta.label}
+            {questionTypeLabel(question.type, uiLanguage)}
           </p>
-          <h1 className="text-2xl font-semibold tracking-tight">Savolni tahrirlash</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("editQuestion")}</h1>
         </div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            title="Nusxalash"
+            title={t("duplicate")}
             onClick={() => duplicateQuestion(quizId, stageId, question.id)}
           >
             <Copy className="h-4 w-4" />
@@ -86,9 +87,9 @@ export function QuestionEditorPanel({
           <Button
             variant="ghost"
             size="icon"
-            title="O'chirish"
+            title={t("delete")}
             onClick={() => {
-              if (confirm("Savolni o'chirasizmi?")) deleteQuestion(quizId, stageId, question.id);
+              if (confirm(t("confirmDeleteQuestion"))) deleteQuestion(quizId, stageId, question.id);
             }}
           >
             <Trash2 className="h-4 w-4 text-red-400" />
@@ -96,22 +97,22 @@ export function QuestionEditorPanel({
         </div>
       </div>
 
-      <EditorSection icon={MessageSquare} title="Savol matni">
+      <EditorSection icon={MessageSquare} title={t("questionTextLabel")}>
         <LocalizedRichTextEditor
           value={question.prompt}
-          placeholder="Savolni shu yerga yozing..."
+          placeholder={t("questionTextPlaceholder")}
           onChange={(prompt) => patch({ prompt })}
         />
       </EditorSection>
 
       {question.type === "multiple-choice" && (
-        <EditorSection icon={Check} title="Variantlar" hint="To'g'ri javobni doiraga bosib belgilang">
+        <EditorSection icon={Check} title={t("optionsLabel")} hint={t("optionsHint")}>
           <MultipleChoiceEditor question={question} onChange={(p) => patch(p)} />
         </EditorSection>
       )}
 
       {question.type === "image" && (
-        <EditorSection icon={ImageIcon} title="Rasm">
+        <EditorSection icon={ImageIcon} title={t("imageLabel")}>
           <SingleMediaField
             mediaId={(question as ImageQuestion).mediaId}
             kind="image"
@@ -122,7 +123,7 @@ export function QuestionEditorPanel({
       )}
 
       {question.type === "music" && (
-        <EditorSection icon={Music} title="Audio fayl">
+        <EditorSection icon={Music} title={t("audioFileLabel")}>
           <SingleMediaField
             mediaId={(question as MusicQuestion).mediaId}
             kind="audio"
@@ -133,7 +134,7 @@ export function QuestionEditorPanel({
       )}
 
       {question.type === "video" && (
-        <EditorSection icon={Video} title="Video fayl">
+        <EditorSection icon={Video} title={t("videoFileLabel")}>
           <SingleMediaField
             mediaId={(question as VideoQuestion).mediaId}
             kind="video"
@@ -144,7 +145,7 @@ export function QuestionEditorPanel({
       )}
 
       {question.type === "multi-image" && (
-        <EditorSection icon={Images} title="Rasmlar">
+        <EditorSection icon={Images} title={t("imagesLabel")}>
           <MultiImageEditor
             question={question as MultiImageQuestion}
             onAdd={() => setMediaTarget("multi-add")}
@@ -157,8 +158,8 @@ export function QuestionEditorPanel({
       {supportsBackground && (
         <EditorSection
           icon={Sparkles}
-          title="Fon rasm (ixtiyoriy)"
-          hint="Taqdimotda savol matni ortida to'liq ekran fon sifatida ko'rsatiladi"
+          title={t("backgroundImageLabel")}
+          hint={t("backgroundImageHint")}
         >
           <SingleMediaField
             mediaId={question.backgroundImageId}
@@ -169,41 +170,41 @@ export function QuestionEditorPanel({
         </EditorSection>
       )}
 
-      <EditorSection icon={TimerIcon} title="Vaqt hisoblagich">
+      <EditorSection icon={TimerIcon} title={t("timerLabel")}>
         <div className="flex flex-wrap gap-1.5">
-          {TIMER_OPTIONS.map((t) => (
+          {TIMER_OPTIONS.map((opt) => (
             <button
-              key={String(t)}
-              onClick={() => patch({ timerSeconds: t })}
+              key={String(opt)}
+              onClick={() => patch({ timerSeconds: opt })}
               className={cn(
                 "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
-                question.timerSeconds === t
+                question.timerSeconds === opt
                   ? "border-accent/60 bg-accent/10 text-foreground"
                   : "border-border bg-surface-2 text-muted-foreground hover:bg-foreground/5"
               )}
             >
-              {t === null ? "O'chirilgan" : `${t}s`}
+              {opt === null ? t("timerOff") : `${opt}s`}
             </button>
           ))}
         </div>
       </EditorSection>
 
       <div className="rounded-2xl border border-border bg-surface-2/50 p-5">
-        <p className="mb-4 text-sm font-semibold text-foreground/90">Javob slaydi</p>
+        <p className="mb-4 text-sm font-semibold text-foreground/90">{t("answerSlideLabel")}</p>
         <div className="flex flex-col gap-5">
           <LocalizedRichTextEditor
-            label="To'g'ri javob"
+            label={t("correctAnswerFieldLabel")}
             value={question.answer.correctText}
-            placeholder="To'g'ri javobni yozing..."
+            placeholder={t("correctAnswerPlaceholder")}
             minimal
             onChange={(correctText) =>
               patch({ answer: { ...question.answer, correctText } })
             }
           />
           <LocalizedRichTextEditor
-            label="Izoh (ixtiyoriy)"
+            label={t("explanationLabel")}
             value={question.answer.explanation ?? emptyLocalizedText()}
-            placeholder="Qo'shimcha izoh..."
+            placeholder={t("explanationPlaceholder")}
             minimal
             onChange={(explanation) =>
               patch({ answer: { ...question.answer, explanation } })
@@ -211,7 +212,7 @@ export function QuestionEditorPanel({
           />
           <div>
             <p className="mb-2 text-xs font-medium text-muted-foreground">
-              Javob rasmi (ixtiyoriy)
+              {t("answerImageLabel")}
             </p>
             <SingleMediaField
               mediaId={question.answer.mediaId}
@@ -276,6 +277,7 @@ function MultipleChoiceEditor({
   onChange: (p: Partial<MultipleChoiceQuestion>) => void;
 }) {
   const letters = ["A", "B", "C", "D", "E", "F"];
+  const t = useT();
 
   function updateOption(id: string, text: MultipleChoiceQuestion["options"][number]["text"]) {
     onChange({
@@ -304,7 +306,7 @@ function MultipleChoiceEditor({
         {question.options.map((opt, i) => (
           <div key={opt.id} className="flex items-start gap-2">
             <button
-              title="To'g'ri javob sifatida belgilash"
+              title={t("markCorrectTitle")}
               onClick={() => onChange({ correctOptionId: opt.id })}
               className={cn(
                 "mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold transition-colors",
@@ -338,7 +340,7 @@ function MultipleChoiceEditor({
           onClick={addOption}
           className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
         >
-          <Plus className="h-3 w-3" /> Variant qo&apos;shish
+          <Plus className="h-3 w-3" /> {t("addOption")}
         </button>
       )}
     </div>
@@ -358,6 +360,7 @@ function SingleMediaField({
 }) {
   const url = useMediaUrl(mediaId);
   const Icon = kind === "audio" ? Music : kind === "video" ? Video : ImageIcon;
+  const t = useT();
 
   return (
     <div>
@@ -378,14 +381,14 @@ function SingleMediaField({
             <button
               onClick={onPick}
               className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
-              title="Almashtirish"
+              title={t("replaceMedia")}
             >
               <ImageIcon className="h-3.5 w-3.5" />
             </button>
             <button
               onClick={onClear}
               className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
-              title="O'chirish"
+              title={t("delete")}
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -397,7 +400,7 @@ function SingleMediaField({
           className="flex w-full max-w-xs flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface-2 py-8 text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground"
         >
           <Icon className="h-5 w-5" />
-          <span className="text-xs">Fayl tanlash</span>
+          <span className="text-xs">{t("chooseFile")}</span>
         </button>
       )}
     </div>
@@ -416,6 +419,8 @@ function MultiImageEditor({
   onChangeRevealStyle: (style: CollageRevealStyle) => void;
 }) {
   const media = useQuizStore((s) => s.media);
+  const t = useT();
+  const uiLanguage = useUiLanguageStore((s) => s.language);
 
   function removeAt(index: number) {
     const next = question.mediaIds.slice();
@@ -426,7 +431,7 @@ function MultiImageEditor({
   return (
     <div>
       <p className="mb-2 text-[11px] text-muted-foreground/70">
-        {question.mediaIds.length} ta rasm — tizim avtomatik kollaj yaratadi
+        {question.mediaIds.length} {t("collageImagesInfoSuffix")}
       </p>
       <div className="grid grid-cols-4 gap-2">
         {question.mediaIds.map((id, i) => {
@@ -470,8 +475,10 @@ function MultiImageEditor({
                   : "border-border bg-surface-2 hover:bg-foreground/5"
               )}
             >
-              <div className="text-xs font-medium">{style.label}</div>
-              <div className="text-[10px] text-muted-foreground">{style.description}</div>
+              <div className="text-xs font-medium">{collageRevealLabel(style.value, uiLanguage)}</div>
+              <div className="text-[10px] text-muted-foreground">
+                {collageRevealDescription(style.value, uiLanguage)}
+              </div>
             </button>
           ))}
         </div>

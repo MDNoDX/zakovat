@@ -16,6 +16,7 @@ import { uid } from "@/lib/utils";
 import type { MediaItem, MediaKind } from "@/types/quiz";
 import { MediaThumb } from "@/components/edit/MediaThumb";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 interface MediaLibraryDialogProps {
   open: boolean;
@@ -40,6 +41,7 @@ export function MediaLibraryDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const t = useT();
 
   const items = filterKind ? media.filter((m) => m.kind === filterKind) : media;
 
@@ -96,10 +98,8 @@ export function MediaLibraryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Media kutubxona</DialogTitle>
-          <DialogDescription>
-            Fayllarni yuklang yoki avval yuklangan mediadan qayta foydalaning.
-          </DialogDescription>
+          <DialogTitle>{t("mediaLibrary")}</DialogTitle>
+          <DialogDescription>{t("mediaLibraryDescription")}</DialogDescription>
         </DialogHeader>
 
         <input
@@ -116,13 +116,13 @@ export function MediaLibraryDialog({
           className="mb-4 flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface-2 py-6 text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground"
         >
           <UploadCloud className="h-5 w-5" />
-          <span className="text-xs">{uploading ? "Yuklanmoqda..." : "Fayl yuklash uchun bosing"}</span>
+          <span className="text-xs">{uploading ? t("uploading") : t("clickToUpload")}</span>
         </button>
 
         <div className="grid max-h-72 grid-cols-4 gap-2 overflow-y-auto">
           {items.length === 0 && (
             <p className="col-span-4 py-6 text-center text-xs text-muted-foreground">
-              Hali media yo&apos;q
+              {t("noMediaYet")}
             </p>
           )}
           {items.map((item) => {
@@ -145,7 +145,7 @@ export function MediaLibraryDialog({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm("Ushbu faylni o'chirasizmi?")) {
+                    if (confirm(t("confirmDeleteMedia"))) {
                       deleteMediaBlob(item.id);
                       deleteMedia(item.id);
                       setPicked((p) => p.filter((x) => x !== item.id));
@@ -162,10 +162,10 @@ export function MediaLibraryDialog({
 
         <div className="mt-4 flex justify-end gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Bekor qilish
+            {t("cancel")}
           </Button>
           <Button disabled={picked.length === 0} onClick={confirmSelection}>
-            Tanlash{picked.length > 1 ? ` (${picked.length})` : ""}
+            {t("select")}{picked.length > 1 ? ` (${picked.length})` : ""}
           </Button>
         </div>
       </DialogContent>

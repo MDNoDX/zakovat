@@ -5,11 +5,14 @@ import { motion } from "framer-motion";
 import { Play, Pencil, Copy, Trash2, Layers } from "lucide-react";
 import type { Quiz } from "@/types/quiz";
 import { useQuizStore } from "@/lib/store";
+import { useT, confirmDeleteQuizMessage, useUiLanguageStore } from "@/lib/i18n";
 
 export function QuizCard({ quiz }: { quiz: Quiz }) {
   const deleteQuiz = useQuizStore((s) => s.deleteQuiz);
   const duplicateQuiz = useQuizStore((s) => s.duplicateQuiz);
   const questionCount = quiz.stages.reduce((n, s) => n + s.questions.length, 0);
+  const t = useT();
+  const uiLanguage = useUiLanguageStore((s) => s.language);
 
   return (
     <motion.div
@@ -24,8 +27,13 @@ export function QuizCard({ quiz }: { quiz: Quiz }) {
           <Layers className="h-5 w-5" />
         </div>
         <h3 className="mb-1 truncate text-base font-semibold">{quiz.title}</h3>
+        {quiz.description && (
+          <p className="mb-1.5 line-clamp-2 text-xs text-muted-foreground/80">
+            {quiz.description}
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
-          {quiz.stages.length} ta bosqich &middot; {questionCount} ta savol
+          {quiz.stages.length} {t("stageWord")} &middot; {questionCount} {t("questionWord")}
         </p>
       </Link>
 
@@ -35,7 +43,7 @@ export function QuizCard({ quiz }: { quiz: Quiz }) {
           target="_blank"
           className="flex items-center gap-1.5 rounded-lg bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-accent/20"
         >
-          <Play className="h-3 w-3" /> Boshlash
+          <Play className="h-3 w-3" /> {t("start")}
         </Link>
         <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <Link
@@ -52,7 +60,7 @@ export function QuizCard({ quiz }: { quiz: Quiz }) {
           </button>
           <button
             onClick={() => {
-              if (confirm(`"${quiz.title}"ni o'chirasizmi?`)) deleteQuiz(quiz.id);
+              if (confirm(confirmDeleteQuizMessage(quiz.title, uiLanguage))) deleteQuiz(quiz.id);
             }}
             className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-500/10 hover:text-red-400"
           >

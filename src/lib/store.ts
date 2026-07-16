@@ -5,6 +5,8 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { createQuestion, createQuiz, createStage } from "@/lib/factories";
 import { uid } from "@/lib/utils";
 import type {
+  Language,
+  LocalizedText,
   MediaItem,
   Question,
   QuestionPatch,
@@ -18,7 +20,9 @@ interface QuizStore {
   media: MediaItem[];
 
   // Quiz-level
-  createQuiz: (title: string) => string;
+  createQuiz: (title: string, description?: string) => string;
+  /** Inserts an already-fully-built quiz object as-is (used by the demo-quiz installer). */
+  installQuiz: (quiz: Quiz) => void;
   deleteQuiz: (quizId: string) => void;
   duplicateQuiz: (quizId: string) => string | undefined;
   updateQuizTitle: (quizId: string, title: string) => void;
@@ -64,17 +68,94 @@ function moveItem<T>(arr: T[], from: number, to: number): T[] {
   return copy;
 }
 
+// --- Legacy data migration -------------------------------------------------
+// Versions before 2 stored every text field as a fixed { uz, ru, en } object.
+// Version 2 switched to an ordered array of { language, content } variants
+// that the presenter builds up freely. This converts old persisted data on
+// load so a quiz created before the change keeps working instead of crashing.
+
+function isLegacyLocalizedText(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    ("uz" in value || "ru" in value || "en" in value)
+  );
+}
+
+function migrateLocalizedText(value: unknown): LocalizedText {
+  if (Array.isArray(value) && value.every((v) => v && typeof v === "object" && "language" in v)) {
+    return value as LocalizedText;
+  }
+  if (isLegacyLocalizedText(value)) {
+    const legacy = value as Record<string, string>;
+    const variants = (["uz", "ru", "en"] as Language[])
+      .filter((lang) => typeof legacy[lang] === "string" && legacy[lang].trim() !== "")
+      .map((lang) => ({ language: lang, content: legacy[lang] }));
+    return variants.length > 0 ? variants : [{ language: "uz" as Language, content: "" }];
+  }
+  return [{ language: "uz" as Language, content: "" }];
+}
+
+function migrateQuizzes(quizzes: unknown): Quiz[] {
+  if (!Array.isArray(quizzes)) return [];
+  return quizzes.map((rawQuiz) => {
+    const q = rawQuiz as Record<string, unknown>;
+    const stages = Array.isArray(q.stages) ? q.stages : [];
+    return {
+      ...(q as object),
+      stages: stages.map((rawStage) => {
+        const st = rawStage as Record<string, unknown>;
+        const questions = Array.isArray(st.questions) ? st.questions : [];
+        return {
+          ...(st as object),
+          name: migrateLocalizedText(st.name),
+          description: migrateLocalizedText(st.description),
+          questions: questions.map((rawQuestion) => {
+            const que = rawQuestion as Record<string, unknown>;
+            const answer = (que.answer ?? {}) as Record<string, unknown>;
+            const migrated: Record<string, unknown> = {
+              ...que,
+              prompt: migrateLocalizedText(que.prompt),
+              answer: {
+                ...answer,
+                correctText: migrateLocalizedText(answer.correctText),
+                explanation:
+                  answer.explanation !== undefined
+                    ? migrateLocalizedText(answer.explanation)
+                    : undefined,
+              },
+            };
+            if (que.type === "multiple-choice" && Array.isArray(que.options)) {
+              migrated.options = que.options.map((rawOpt) => {
+                const opt = rawOpt as Record<string, unknown>;
+                return { ...opt, text: migrateLocalizedText(opt.text) };
+              });
+            }
+            if (que.type === "multi-image" && !que.revealStyle) {
+              migrated.revealStyle = "all-at-once";
+            }
+            return migrated;
+          }),
+        };
+      }),
+    } as Quiz;
+  });
+}
+
 export const useQuizStore = create<QuizStore>()(
   persist(
     (set, get) => ({
       quizzes: [],
       media: [],
 
-      createQuiz: (title) => {
-        const quiz = createQuiz(title);
+      createQuiz: (title, description) => {
+        const quiz = createQuiz(title, description);
         set((s) => ({ quizzes: [...s.quizzes, quiz] }));
         return quiz.id;
       },
+
+      installQuiz: (quiz) => set((s) => ({ quizzes: [...s.quizzes, quiz] })),
 
       deleteQuiz: (quizId) =>
         set((s) => ({ quizzes: s.quizzes.filter((q) => q.id !== quizId) })),
@@ -280,7 +361,18 @@ export const useQuizStore = create<QuizStore>()(
     {
       name: "zakovat-store",
       storage: createJSONStorage(() => localStorage),
-      version: 1,
+      version: 2,
+      migrate: (persistedState, version) => {
+        const state = persistedState as { quizzes?: unknown; media?: unknown } | undefined;
+        if (!state) return state;
+        if (version < 2) {
+          return {
+            ...state,
+            quizzes: migrateQuizzes(state.quizzes),
+          };
+        }
+        return state;
+      },
     }
   )
 );

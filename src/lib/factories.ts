@@ -57,7 +57,7 @@ export function createStage(index: number): Stage {
   const now = Date.now();
   return {
     id: uid(),
-    name: { ...emptyLocalizedText(), uz: `${index + 1}-bosqich` },
+    name: [{ language: "uz", content: `${index + 1}-bosqich` }],
     description: emptyLocalizedText(),
     revealMode: "after-each",
     questions: [],
@@ -66,11 +66,12 @@ export function createStage(index: number): Stage {
   };
 }
 
-export function createQuiz(title: string): Quiz {
+export function createQuiz(title: string, description?: string): Quiz {
   const now = Date.now();
   return {
     id: uid(),
     title: title || "Nomsiz Zakovat",
+    description: description?.trim() || undefined,
     stages: [],
     defaultLanguage: "uz",
     createdAt: now,

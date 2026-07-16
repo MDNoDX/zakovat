@@ -11,11 +11,12 @@ import {
   Trash2,
   Settings2,
 } from "lucide-react";
-import type { Stage } from "@/types/quiz";
+import { resolveText, type Stage } from "@/types/quiz";
 import { useQuizStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { QuestionItem } from "@/components/edit/QuestionItem";
 import { AddQuestionMenu } from "@/components/edit/AddQuestionMenu";
+import { useT, confirmDeleteStageMessage, useUiLanguageStore } from "@/lib/i18n";
 
 interface DragItem {
   id: string;
@@ -43,6 +44,8 @@ export function StageItem({
   const deleteStage = useQuizStore((s) => s.deleteStage);
   const duplicateStage = useQuizStore((s) => s.duplicateStage);
   const addQuestion = useQuizStore((s) => s.addQuestion);
+  const t = useT();
+  const uiLanguage = useUiLanguageStore((s) => s.language);
 
   const [, drop] = useDrop<DragItem>({
     accept: "STAGE",
@@ -72,7 +75,7 @@ export function StageItem({
   drag(drop(ref));
 
   const isStageActive = selection.stageId === stage.id && !selection.questionId;
-  const name = stage.name.uz || stage.name.ru || stage.name.en || `${index + 1}-bosqich`;
+  const name = resolveText(stage.name, "uz") || `${index + 1}-bosqich`;
 
   return (
     <div ref={ref} className={cn(isDragging && "opacity-40")}>
@@ -102,23 +105,23 @@ export function StageItem({
         </span>
         <div className="hidden shrink-0 items-center gap-0.5 group-hover:flex">
           <button
-            title="Sozlamalar"
+            title={t("settings")}
             onClick={() => onSelectStage(stage.id)}
             className="rounded p-1 hover:bg-foreground/10"
           >
             <Settings2 className="h-3 w-3" />
           </button>
           <button
-            title="Nusxalash"
+            title={t("duplicate")}
             onClick={() => duplicateStage(quizId, stage.id)}
             className="rounded p-1 hover:bg-foreground/10"
           >
             <Copy className="h-3 w-3" />
           </button>
           <button
-            title="O'chirish"
+            title={t("delete")}
             onClick={() => {
-              if (confirm(`"${name}" bosqichini o'chirasizmi?`)) deleteStage(quizId, stage.id);
+              if (confirm(confirmDeleteStageMessage(name, uiLanguage))) deleteStage(quizId, stage.id);
             }}
             className="rounded p-1 hover:bg-red-500/10 hover:text-red-400"
           >
@@ -156,7 +159,7 @@ export function StageItem({
                 }}
               >
                 <button className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-foreground/5 hover:text-foreground">
-                  <Plus className="h-3 w-3" /> Savol qo&apos;shish
+                  <Plus className="h-3 w-3" /> {t("addQuestion")}
                 </button>
               </AddQuestionMenu>
             </div>

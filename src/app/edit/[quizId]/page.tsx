@@ -11,8 +11,11 @@ import { QuestionEditorPanel } from "@/components/edit/QuestionEditorPanel";
 import { MediaLibraryDialog } from "@/components/edit/MediaLibraryDialog";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useT } from "@/lib/i18n";
 
 export default function EditPage({ params }: { params: { quizId: string } }) {
+  const t = useT();
   const [mounted, setMounted] = useState(false);
   const [mediaLibraryOpen, setMediaLibraryOpen] = useState(false);
   const [selection, setSelection] = useState<{
@@ -38,9 +41,9 @@ export default function EditPage({ params }: { params: { quizId: string } }) {
   if (!quiz) {
     return (
       <div className="flex h-screen w-screen flex-col items-center justify-center gap-3 bg-background text-foreground">
-        <p className="text-sm text-muted-foreground">Zakovat topilmadi.</p>
+        <p className="text-sm text-muted-foreground">{t("quizNotFound")}</p>
         <Link href="/" className="text-sm text-accent hover:underline">
-          Bosh sahifaga qaytish
+          {t("backToHome")}
         </Link>
       </div>
     );
@@ -63,14 +66,13 @@ export default function EditPage({ params }: { params: { quizId: string } }) {
 
         <div className="flex flex-1 flex-col overflow-hidden">
           <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-6">
-            <div className="text-xs text-muted-foreground">
-              Tahrirlash rejimi &middot; avtomatik saqlanadi
-            </div>
+            <div className="text-xs text-muted-foreground">{t("editModeAutosave")}</div>
             <div className="flex items-center gap-2">
+              <LanguageSwitcher />
               <ThemeToggle />
               <Link href={`/present/${quiz.id}`} target="_blank">
                 <Button size="sm">
-                  <Play className="h-3.5 w-3.5" /> Taqdimotni boshlash
+                  <Play className="h-3.5 w-3.5" /> {t("startPresentation")}
                 </Button>
               </Link>
             </div>
@@ -87,7 +89,7 @@ export default function EditPage({ params }: { params: { quizId: string } }) {
               <StageSettingsPanel quizId={quiz.id} stage={activeStage} />
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-muted-foreground">
-                <p className="text-sm">Boshlash uchun chapdan bosqich yarating</p>
+                <p className="text-sm">{t("createStagePrompt")}</p>
               </div>
             )}
           </main>

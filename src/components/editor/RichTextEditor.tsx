@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { FontSize } from "@/lib/tiptap-font-size";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 interface RichTextEditorProps {
   value: string;
@@ -82,11 +83,13 @@ export function RichTextEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, editor]);
 
+  const t = useT();
+
   if (!editor) return null;
 
   const setLink = () => {
     const previous = editor.getAttributes("link").href as string | undefined;
-    const url = window.prompt("Havola manzili (URL):", previous || "https://");
+    const url = window.prompt(t("linkPromptMessage"), previous || "https://");
     if (url === null) return;
     if (url === "") {
       editor.chain().focus().unsetLink().run();
@@ -101,21 +104,21 @@ export function RichTextEditor({
         <ToolbarButton
           active={editor.isActive("bold")}
           onClick={() => editor.chain().focus().toggleBold().run()}
-          label="Qalin"
+          label={t("toolbarBold")}
         >
           <Bold className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
           active={editor.isActive("italic")}
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          label="Kursiv"
+          label={t("toolbarItalic")}
         >
           <Italic className="h-3.5 w-3.5" />
         </ToolbarButton>
         <ToolbarButton
           active={editor.isActive("underline")}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          label="Tag'ich chizilgan"
+          label={t("toolbarUnderline")}
         >
           <UnderlineIcon className="h-3.5 w-3.5" />
         </ToolbarButton>
@@ -126,14 +129,14 @@ export function RichTextEditor({
             <ToolbarButton
               active={editor.isActive({ textAlign: "left" })}
               onClick={() => editor.chain().focus().setTextAlign("left").run()}
-              label="Chapga"
+              label={t("toolbarAlignLeft")}
             >
               <AlignLeft className="h-3.5 w-3.5" />
             </ToolbarButton>
             <ToolbarButton
               active={editor.isActive({ textAlign: "center" })}
               onClick={() => editor.chain().focus().setTextAlign("center").run()}
-              label="Markazga"
+              label={t("toolbarAlignCenter")}
             >
               <AlignCenter className="h-3.5 w-3.5" />
             </ToolbarButton>
@@ -141,19 +144,19 @@ export function RichTextEditor({
             <ToolbarButton
               active={editor.isActive("bulletList")}
               onClick={() => editor.chain().focus().toggleBulletList().run()}
-              label="Ro'yxat"
+              label={t("toolbarBulletList")}
             >
               <List className="h-3.5 w-3.5" />
             </ToolbarButton>
             <ToolbarButton
               active={editor.isActive("orderedList")}
               onClick={() => editor.chain().focus().toggleOrderedList().run()}
-              label="Raqamli ro'yxat"
+              label={t("toolbarOrderedList")}
             >
               <ListOrdered className="h-3.5 w-3.5" />
             </ToolbarButton>
             <Divider />
-            <ToolbarButton onClick={setLink} active={editor.isActive("link")} label="Havola">
+            <ToolbarButton onClick={setLink} active={editor.isActive("link")} label={t("toolbarLink")}>
               <LinkIcon className="h-3.5 w-3.5" />
             </ToolbarButton>
             <Divider />

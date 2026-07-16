@@ -1,5 +1,6 @@
 // Core domain types for Zakovat presentation quizzes.
-// Every user-facing text field is localized across three languages.
+// Every user-facing text field can hold 1-3 language variants, freely
+// chosen by the presenter (not forced into always filling uz+ru+en).
 
 export type Language = "uz" | "ru" | "en";
 
@@ -9,16 +10,51 @@ export const LANGUAGES: { code: Language; label: string }[] = [
   { code: "en", label: "English" },
 ];
 
-/** Rich text stored as sanitized HTML per language (produced by the Tiptap editor). */
-export type LocalizedText = Record<Language, string>;
+/** One language's worth of rich-text HTML content (produced by the Tiptap editor). */
+export interface TextVariant {
+  language: Language;
+  content: string;
+}
 
-export function emptyLocalizedText(): LocalizedText {
-  return { uz: "", ru: "", en: "" };
+/**
+ * An ordered list of language variants for a single piece of text. Always
+ * has at least one entry; can grow up to one entry per supported language.
+ * The presenter picks which language each entry represents and can add
+ * more languages on demand — nothing is force-filled.
+ */
+export type LocalizedText = TextVariant[];
+
+export function emptyLocalizedText(language: Language = "uz"): LocalizedText {
+  return [{ language, content: "" }];
 }
 
 export function isLocalizedTextEmpty(t: LocalizedText | undefined): boolean {
-  if (!t) return true;
-  return Object.values(t).every((v) => !v || v.replace(/<[^>]*>/g, "").trim() === "");
+  if (!t || t.length === 0) return true;
+  return t.every((v) => !v.content || v.content.replace(/<[^>]*>/g, "").trim() === "");
+}
+
+/**
+ * Resolves what to actually show for a given presentation/UI language:
+ * the exact variant if it exists and has content, otherwise the first
+ * variant that does have content, otherwise an empty string. This keeps
+ * Presentation Mode looking intentional even when a question has only
+ * been written in one or two languages.
+ */
+export function resolveText(t: LocalizedText | undefined, language: Language): string {
+  if (!t || t.length === 0) return "";
+  const exact = t.find((v) => v.language === language);
+  if (exact && exact.content && exact.content.trim() !== "") return exact.content;
+  const anyFilled = t.find((v) => v.content && v.content.trim() !== "");
+  return anyFilled?.content ?? t[0]?.content ?? "";
+}
+
+export function usedLanguages(t: LocalizedText | undefined): Language[] {
+  return (t ?? []).map((v) => v.language);
+}
+
+export function unusedLanguages(t: LocalizedText | undefined): Language[] {
+  const used = new Set(usedLanguages(t));
+  return LANGUAGES.map((l) => l.code).filter((code) => !used.has(code));
 }
 
 /** How answers are revealed within a stage. */
@@ -179,6 +215,8 @@ export interface Stage {
 export interface Quiz {
   id: string;
   title: string;
+  /** Short organizational note about the quiz — not shown to the audience. */
+  description?: string;
   stages: Stage[];
   defaultLanguage: Language;
   createdAt: number;

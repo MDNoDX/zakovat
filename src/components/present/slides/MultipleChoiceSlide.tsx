@@ -1,6 +1,6 @@
 "use client";
 
-import type { MultipleChoiceQuestion, Language } from "@/types/quiz";
+import { resolveText, type MultipleChoiceQuestion, type Language } from "@/types/quiz";
 import { QuestionPrompt } from "@/components/present/QuestionPrompt";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,7 @@ export function MultipleChoiceSlide({
       <div className="grid w-full max-w-4xl grid-cols-1 gap-4 md:grid-cols-2">
         {question.options.map((opt, i) => {
           const isCorrect = revealed && question.correctOptionId === opt.id;
-          const text = opt.text[language] || opt.text.uz || opt.text.ru || opt.text.en;
+          const text = resolveText(opt.text, language);
           return (
             <div
               key={opt.id}

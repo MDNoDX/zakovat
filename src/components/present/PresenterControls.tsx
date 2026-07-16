@@ -1,9 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Maximize, Minimize } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize, Minimize, Volume2, VolumeX } from "lucide-react";
 import { LANGUAGES, type Language } from "@/types/quiz";
 import { cn } from "@/lib/utils";
+import { tFor } from "@/lib/i18n";
 
 export function PresenterControls({
   visible,
@@ -15,6 +16,8 @@ export function PresenterControls({
   onNext,
   isFullscreen,
   onToggleFullscreen,
+  soundEnabled,
+  onToggleSound,
 }: {
   visible: boolean;
   current: number;
@@ -25,6 +28,8 @@ export function PresenterControls({
   onNext: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  soundEnabled: boolean;
+  onToggleSound: () => void;
 }) {
   return (
     <AnimatePresence>
@@ -72,6 +77,16 @@ export function PresenterControls({
               </button>
             ))}
           </div>
+
+          <div className="mx-1 h-4 w-px bg-white/10" />
+
+          <button
+            onClick={onToggleSound}
+            title={tFor(soundEnabled ? "muteSounds" : "unmuteSounds", language)}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            {soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+          </button>
 
           <div className="mx-1 h-4 w-px bg-white/10" />
 
