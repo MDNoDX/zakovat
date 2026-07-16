@@ -54,7 +54,7 @@ function baseQuestion(
   now: number,
   prompt: string,
   correct: string,
-  timerSeconds: TimerSeconds,
+  timerSeconds: TimerSeconds = 30,
   explanation?: string
 ) {
   return {
