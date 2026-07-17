@@ -158,6 +158,25 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
     [slides, index]
   );
 
+  // Presenter-controlled "review the questions again" pass for end-of-stage
+  // (bulk reveal) stages: from the stage-end slide, jump back to the first
+  // question and let the presenter step through Q1..Qn once more at their
+  // own pace (using the normal prev/next controls) before moving on to
+  // reveal answers. jumpBackToStageEnd is the matching way back.
+  const jumpToFirstQuestion = useCallback(() => {
+    const current = slides[index];
+    if (!current) return;
+    const target = slides.findIndex((s) => s.stage.id === current.stage.id && s.kind === "question");
+    if (target >= 0) setIndex(target);
+  }, [slides, index]);
+
+  const jumpBackToStageEnd = useCallback(() => {
+    const current = slides[index];
+    if (!current) return;
+    const target = slides.findIndex((s) => s.stage.id === current.stage.id && s.kind === "stage-end");
+    if (target >= 0) setIndex(target);
+  }, [slides, index]);
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       showControls();
@@ -280,6 +299,9 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
               languages={visibleLanguages}
               imageRevealStep={imageRevealStep}
               showExplanation={showExplanation}
+              onReviewQuestions={jumpToFirstQuestion}
+              onBackToAnswers={jumpBackToStageEnd}
+              onShowAnswer={goNext}
             />
           </motion.div>
         </AnimatePresence>
@@ -307,18 +329,27 @@ function SlideRenderer({
   languages,
   imageRevealStep,
   showExplanation,
+  onReviewQuestions,
+  onBackToAnswers,
+  onShowAnswer,
 }: {
   slide: Slide;
   languages: Language[];
   imageRevealStep: number;
   showExplanation: boolean;
+  /** Jumps from the stage-end slide back to Q1 for a presenter-paced re-review. */
+  onReviewQuestions: () => void;
+  /** Jumps from a question/recap slide straight back to the stage-end slide. */
+  onBackToAnswers: () => void;
+  /** Advances from a recap slide into its answer. */
+  onShowAnswer: () => void;
 }) {
   const primaryLanguage = languages[0] ?? "uz";
   switch (slide.kind) {
     case "stage-intro":
       return <StageIntroSlide stage={slide.stage} languages={languages} />;
     case "stage-end":
-      return <StageEndSlide language={primaryLanguage} />;
+      return <StageEndSlide language={primaryLanguage} onReviewQuestions={onReviewQuestions} />;
     case "answer":
       return (
         <AnswerSlide
@@ -330,58 +361,91 @@ function SlideRenderer({
       );
     case "question": {
       const { question } = slide;
-      switch (question.type) {
-        case "text":
-          return <TextQuestionSlide question={question} languages={languages} />;
-        case "multiple-choice":
-          return <MultipleChoiceSlide question={question} languages={languages} />;
-        case "image":
-          return <ImageQuestionSlide question={question} languages={languages} />;
-        case "multi-image":
-          return (
-            <MultiImageSlide
-              question={question}
-              languages={languages}
-              revealCount={
-                question.revealStyle === "sequential"
-                  ? imageRevealStep
-                  : question.mediaIds.length
-              }
-            />
-          );
-        case "music":
-          return <MusicQuestionSlide question={question} />;
-        case "video":
-          return <VideoQuestionSlide question={question} languages={languages} />;
+      const body = (() => {
+        switch (question.type) {
+          case "text":
+            return <TextQuestionSlide question={question} languages={languages} />;
+          case "multiple-choice":
+            return <MultipleChoiceSlide question={question} languages={languages} />;
+          case "image":
+            return <ImageQuestionSlide question={question} languages={languages} />;
+          case "multi-image":
+            return (
+              <MultiImageSlide
+                question={question}
+                languages={languages}
+                revealCount={
+                  question.revealStyle === "sequential"
+                    ? imageRevealStep
+                    : question.mediaIds.length
+                }
+              />
+            );
+          case "music":
+            return <MusicQuestionSlide question={question} />;
+          case "video":
+            return <VideoQuestionSlide question={question} languages={languages} />;
+        }
+      })();
+      // Only end-of-stage stages ever have a stage-end slide to jump back
+      // to, so the shortcut only makes sense there — it lets a presenter
+      // who used "review questions again" hop straight back to the answers
+      // instead of clicking Next through every question a second time.
+      if (slide.stage.revealMode === "end-of-stage") {
+        return (
+          <div className="relative h-full w-full">
+            {body}
+            <button
+              onClick={onBackToAnswers}
+              className="absolute bottom-8 right-8 z-20 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/40 px-4 py-2 text-xs font-medium text-white/70 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white"
+            >
+              {tFor("backToAnswers", primaryLanguage)}
+            </button>
+          </div>
+        );
       }
-      break;
+      return body;
     }
     // Recap: the same question body as above, but always fully revealed
     // (no partial collage reveal, no re-running timer) — this is a reminder
-    // shown right before the answer in bulk-reveal mode, not a re-ask.
+    // shown right before the answer in bulk-reveal mode, not a re-ask. The
+    // presenter gets an explicit on-screen control to move into the answer
+    // rather than relying only on the generic next-slide arrow.
     case "recap": {
       const { question } = slide;
-      switch (question.type) {
-        case "text":
-          return <TextQuestionSlide question={question} languages={languages} />;
-        case "multiple-choice":
-          return <MultipleChoiceSlide question={question} languages={languages} />;
-        case "image":
-          return <ImageQuestionSlide question={question} languages={languages} />;
-        case "multi-image":
-          return (
-            <MultiImageSlide
-              question={question}
-              languages={languages}
-              revealCount={question.mediaIds.length}
-            />
-          );
-        case "music":
-          return <MusicQuestionSlide question={question} />;
-        case "video":
-          return <VideoQuestionSlide question={question} languages={languages} />;
-      }
-      break;
+      const body = (() => {
+        switch (question.type) {
+          case "text":
+            return <TextQuestionSlide question={question} languages={languages} />;
+          case "multiple-choice":
+            return <MultipleChoiceSlide question={question} languages={languages} />;
+          case "image":
+            return <ImageQuestionSlide question={question} languages={languages} />;
+          case "multi-image":
+            return (
+              <MultiImageSlide
+                question={question}
+                languages={languages}
+                revealCount={question.mediaIds.length}
+              />
+            );
+          case "music":
+            return <MusicQuestionSlide question={question} />;
+          case "video":
+            return <VideoQuestionSlide question={question} languages={languages} />;
+        }
+      })();
+      return (
+        <div className="relative h-full w-full">
+          {body}
+          <button
+            onClick={onShowAnswer}
+            className="absolute bottom-10 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white shadow-soft transition-transform hover:scale-105 active:scale-95"
+          >
+            {tFor("showAnswerCta", primaryLanguage)}
+          </button>
+        </div>
+      );
     }
   }
 }

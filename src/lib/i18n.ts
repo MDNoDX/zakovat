@@ -159,6 +159,21 @@ export const UI_STRINGS = {
   },
   stageComplete: { uz: "Bosqich yakunlandi", ru: "Этап завершён", en: "Stage complete" },
   seeAnswers: { uz: "Javoblarni ko'ramiz", ru: "Смотрим ответы", en: "Let's see the answers" },
+  reviewQuestionsAgain: {
+    uz: "Savollarni yana bir bor ko'rib chiqish",
+    ru: "Ещё раз просмотреть вопросы",
+    en: "Review the questions once more",
+  },
+  backToAnswers: {
+    uz: "Javoblarga qaytish",
+    ru: "Вернуться к ответам",
+    en: "Back to answers",
+  },
+  showAnswerCta: {
+    uz: "Javobni ko'rsatish",
+    ru: "Показать ответ",
+    en: "Show the answer",
+  },
   newStage: { uz: "Yangi bosqich", ru: "Новый этап", en: "New stage" },
   untitledStage: { uz: "Nomsiz bosqich", ru: "Этап без названия", en: "Untitled stage" },
 
