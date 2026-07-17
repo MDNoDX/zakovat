@@ -80,7 +80,7 @@ export function MultiLangText({
                   )}
                   <div
                     className={cn(
-                      "editor-content prose prose-invert",
+                      "editor-content prose",
                       weight,
                       SIZE_CLASS[size],
                       proseClassName
@@ -120,7 +120,7 @@ export function MultiLangText({
               )}
               <div
                 className={cn(
-                  "editor-content prose prose-invert max-w-4xl text-center leading-tight tracking-tight",
+                  "editor-content prose max-w-4xl text-center leading-tight tracking-tight",
                   weight,
                   SIZE_CLASS[size],
                   proseClassName

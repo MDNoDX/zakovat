@@ -57,6 +57,10 @@ export function QuestionEditorPanel({
     s.media.find((m) => m.id === question.answer.mediaId)
   );
   const [mediaTarget, setMediaTarget] = useState<MediaTarget>(null);
+  // The answer's optional media attachment stays tucked away behind a small
+  // "add media" link unless something is already attached — most questions
+  // don't need it, so it shouldn't compete for attention by default.
+  const [showAnswerMediaField, setShowAnswerMediaField] = useState(false);
   const t = useT();
   const uiLanguage = useUiLanguageStore((s) => s.language);
 
@@ -216,15 +220,33 @@ export function QuestionEditorPanel({
             }
           />
           <div>
-            <p className="mb-2 text-xs font-medium text-muted-foreground">
-              {t("answerImageLabel")}
-            </p>
-            <SingleMediaField
-              mediaId={question.answer.mediaId}
-              kind={answerMediaItem?.kind ?? "image"}
-              onPick={() => setMediaTarget("answer")}
-              onClear={() => patch({ answer: { ...question.answer, mediaId: null } })}
-            />
+            {question.answer.mediaId || showAnswerMediaField ? (
+              <>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">
+                  {t("answerImageLabel")}
+                </p>
+                <SingleMediaField
+                  mediaId={question.answer.mediaId}
+                  kind={answerMediaItem?.kind ?? "image"}
+                  onPick={() => setMediaTarget("answer")}
+                  onClear={() => {
+                    patch({ answer: { ...question.answer, mediaId: null } });
+                    setShowAnswerMediaField(false);
+                  }}
+                />
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAnswerMediaField(true);
+                  setMediaTarget("answer");
+                }}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Plus className="h-3 w-3" /> {t("addAnswerMedia")}
+              </button>
+            )}
           </div>
         </div>
       </div>

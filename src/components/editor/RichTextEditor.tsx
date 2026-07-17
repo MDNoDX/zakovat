@@ -70,7 +70,7 @@ export function RichTextEditor({
     content: value || "",
     editorProps: {
       attributes: {
-        class: "editor-content prose dark:prose-invert max-w-none text-sm leading-relaxed",
+        class: "editor-content prose max-w-none text-sm leading-relaxed",
       },
     },
     onUpdate: ({ editor }) => {

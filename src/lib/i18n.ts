@@ -216,6 +216,11 @@ export const UI_STRINGS = {
     ru: "Фото, видео или аудио для ответа (необязательно)",
     en: "Image, video, or audio for the answer (optional)",
   },
+  addAnswerMedia: {
+    uz: "Media qo'shish (ixtiyoriy)",
+    ru: "Добавить медиа (необязательно)",
+    en: "Add media (optional)",
+  },
   replaceMedia: { uz: "Almashtirish", ru: "Заменить", en: "Replace" },
   chooseFile: { uz: "Fayl tanlash", ru: "Выбрать файл", en: "Choose file" },
   collageImagesInfoSuffix: {
