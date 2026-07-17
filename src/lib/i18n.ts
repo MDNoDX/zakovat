@@ -9,7 +9,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { CollageRevealStyle, Language, QuestionType, RevealMode } from "@/types/quiz";
+import type { CollageRevealStyle, Language, PromptSize, QuestionType, RevealMode } from "@/types/quiz";
 
 type Dict = Record<Language, string>;
 
@@ -107,6 +107,34 @@ export const UI_STRINGS = {
     en: "Answer reveal order",
   },
 
+  // Stage intro slide styling
+  introStyleLabel: {
+    uz: "Kirish slaydi ko'rinishi",
+    ru: "Вид вступительного слайда",
+    en: "Intro slide look",
+  },
+  nameSizeLabel: { uz: "Nom o'lchami", ru: "Размер названия", en: "Name size" },
+  descriptionSizeLabel: { uz: "Tavsif o'lchami", ru: "Размер описания", en: "Description size" },
+  textAlignLabel: { uz: "Matn joylashuvi", ru: "Выравнивание текста", en: "Text alignment" },
+  alignLeft: { uz: "Chapga", ru: "Слева", en: "Left" },
+  alignCenter: { uz: "Markazda", ru: "По центру", en: "Center" },
+  alignRight: { uz: "O'ngda", ru: "Справа", en: "Right" },
+  textColorLabel: { uz: "Matn rangi", ru: "Цвет текста", en: "Text color" },
+  useThemeColor: {
+    uz: "Standart (mavzu rangi)",
+    ru: "По умолчанию (цвет темы)",
+    en: "Default (theme color)",
+  },
+  backgroundStyleLabel: { uz: "Fon uslubi", ru: "Стиль фона", en: "Background style" },
+  bgNone: { uz: "Yo'q", ru: "Нет", en: "None" },
+  bgGradient: { uz: "Gradient", ru: "Градиент", en: "Gradient" },
+  bgSolid: { uz: "Bir xil rang", ru: "Сплошной цвет", en: "Solid color" },
+  backgroundColorLabel: { uz: "Fon rangi", ru: "Цвет фона", en: "Background color" },
+  sizeSmall: { uz: "Kichik", ru: "Маленький", en: "Small" },
+  sizeMedium: { uz: "O'rta", ru: "Средний", en: "Medium" },
+  sizeLarge: { uz: "Katta", ru: "Большой", en: "Large" },
+  sizeHero: { uz: "Juda katta", ru: "Очень большой", en: "Hero" },
+
   // Media library
   mediaLibraryDescription: {
     uz: "Fayllarni yuklang yoki avval yuklangan mediadan qayta foydalaning.",
@@ -126,6 +154,42 @@ export const UI_STRINGS = {
     en: "Delete this file?",
   },
   select: { uz: "Tanlash", ru: "Выбрать", en: "Select" },
+  editCaption: { uz: "Sarlavha qo'shish", ru: "Добавить подпись", en: "Add caption" },
+  captionPromptMessage: {
+    uz: "Ushbu media uchun qisqa matn (ixtiyoriy):",
+    ru: "Короткая подпись для этого медиа (необязательно):",
+    en: "Short caption for this media (optional):",
+  },
+  trimMedia: { uz: "Qirqish", ru: "Обрезать", en: "Trim" },
+  trimMediaTitle: { uz: "Mediani qirqish", ru: "Обрезка медиа", en: "Trim media" },
+  trimMediaDescription: {
+    uz: "Kerakli qismini belgilang va yangi fayl sifatida saqlang.",
+    ru: "Выберите нужный отрезок и сохраните как новый файл.",
+    en: "Pick the part you need and save it as a new file.",
+  },
+  trimUnsupported: {
+    uz: "Brauzeringiz mediani qirqishni qo'llab-quvvatlamaydi. Chrome yoki Edge'da urinib ko'ring.",
+    ru: "Ваш браузер не поддерживает обрезку медиа. Попробуйте Chrome или Edge.",
+    en: "Your browser doesn't support media trimming. Try Chrome or Edge.",
+  },
+  trimStartLabel: { uz: "Boshlanishi", ru: "Начало", en: "Start" },
+  trimEndLabel: { uz: "Tugashi", ru: "Конец", en: "End" },
+  extractAudioOnly: {
+    uz: "Faqat audio sifatida olish (videosiz)",
+    ru: "Извлечь только аудио (без видео)",
+    en: "Extract audio only (no video)",
+  },
+  trimFailed: {
+    uz: "Qirqishda xatolik yuz berdi. Qaytadan urinib ko'ring.",
+    ru: "Не удалось обрезать. Попробуйте ещё раз.",
+    en: "Trimming failed. Please try again.",
+  },
+  processingTrim: { uz: "Ishlanmoqda...", ru: "Обработка...", en: "Processing..." },
+  saveTrimAsNew: {
+    uz: "Yangi fayl sifatida saqlash",
+    ru: "Сохранить как новый файл",
+    en: "Save as new file",
+  },
 
   // Presentation start screen
   back: { uz: "Orqaga", ru: "Назад", en: "Back" },
@@ -444,6 +508,17 @@ const REVEAL_MODE_I18N: Record<RevealMode, { label: Dict; description: Dict }> =
 
 export function revealModeLabel(mode: RevealMode, language: Language): string {
   return REVEAL_MODE_I18N[mode].label[language];
+}
+
+const PROMPT_SIZE_KEY: Record<PromptSize, "sizeSmall" | "sizeMedium" | "sizeLarge" | "sizeHero"> = {
+  small: "sizeSmall",
+  medium: "sizeMedium",
+  large: "sizeLarge",
+  hero: "sizeHero",
+};
+
+export function promptSizeLabel(size: PromptSize, language: Language): string {
+  return tFor(PROMPT_SIZE_KEY[size], language);
 }
 
 export function revealModeDescription(mode: RevealMode, language: Language): string {

@@ -55,6 +55,7 @@ interface QuizStore {
   // Media metadata
   addMedia: (item: MediaItem) => void;
   deleteMedia: (mediaId: string) => void;
+  updateMediaCaption: (mediaId: string, caption: string) => void;
 }
 
 function touch<T extends { updatedAt: number }>(obj: T): T {
@@ -357,6 +358,11 @@ export const useQuizStore = create<QuizStore>()(
 
       deleteMedia: (mediaId) =>
         set((s) => ({ media: s.media.filter((m) => m.id !== mediaId) })),
+
+      updateMediaCaption: (mediaId, caption) =>
+        set((s) => ({
+          media: s.media.map((m) => (m.id === mediaId ? { ...m, caption } : m)),
+        })),
     }),
     {
       name: "zakovat-store",

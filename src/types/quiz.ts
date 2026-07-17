@@ -210,12 +210,43 @@ export interface QuestionPatch {
   backgroundImageId?: string | null;
 }
 
+/** Text sizing tiers used throughout Presentation Mode. */
+export type PromptSize = "hero" | "large" | "medium" | "small";
+export const PROMPT_SIZES: PromptSize[] = ["small", "medium", "large", "hero"];
+
+export type TextAlign = "left" | "center" | "right";
+export type IntroBackgroundStyle = "none" | "gradient" | "solid";
+
+/** How a stage's intro slide (name + description) is styled — fully
+ * presenter-customizable so it can match whatever the stage is about. */
+export interface StageIntroStyle {
+  nameSize: PromptSize;
+  descriptionSize: PromptSize;
+  align: TextAlign;
+  /** Hex color override for the intro text; null keeps the app's own theme color. */
+  textColor: string | null;
+  background: IntroBackgroundStyle;
+  /** Hex color used when background is "gradient" or "solid". */
+  backgroundColor: string;
+}
+
+export const DEFAULT_INTRO_STYLE: StageIntroStyle = {
+  nameSize: "hero",
+  descriptionSize: "small",
+  align: "center",
+  textColor: null,
+  background: "none",
+  backgroundColor: "#3B82F6",
+};
+
 export interface Stage {
   id: string;
   name: LocalizedText;
   description: LocalizedText;
   revealMode: RevealMode;
   questions: Question[];
+  /** Optional — falls back to DEFAULT_INTRO_STYLE when absent (older quizzes). */
+  introStyle?: StageIntroStyle;
   createdAt: number;
   updatedAt: number;
 }
@@ -243,6 +274,8 @@ export interface MediaItem {
   /** width/height for images, useful for collage layout */
   width?: number;
   height?: number;
+  /** Optional short caption shown alongside this clip during presentation. */
+  caption?: string;
 }
 
 export const QUESTION_TYPE_META: Record<

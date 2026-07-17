@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UploadCloud, Trash2, Check } from "lucide-react";
+import { UploadCloud, Trash2, Check, Pencil, Scissors } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import { mediaKindFromMime, readImageDimensions, saveMediaBlob, deleteMediaBlob 
 import { uid } from "@/lib/utils";
 import type { MediaItem, MediaKind } from "@/types/quiz";
 import { MediaThumb } from "@/components/edit/MediaThumb";
+import { MediaTrimDialog } from "@/components/edit/MediaTrimDialog";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
@@ -38,9 +39,11 @@ export function MediaLibraryDialog({
   const media = useQuizStore((s) => s.media);
   const addMedia = useQuizStore((s) => s.addMedia);
   const deleteMedia = useQuizStore((s) => s.deleteMedia);
+  const updateMediaCaption = useQuizStore((s) => s.updateMediaCaption);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [trimTarget, setTrimTarget] = useState<MediaItem | null>(null);
   const t = useT();
 
   const allowedKinds = filterKind ? (Array.isArray(filterKind) ? filterKind : [filterKind]) : null;
@@ -143,20 +146,52 @@ export function MediaLibraryDialog({
                     <Check className="h-3 w-3" />
                   </div>
                 )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (confirm(t("confirmDeleteMedia"))) {
-                      deleteMediaBlob(item.id);
-                      deleteMedia(item.id);
-                      setPicked((p) => p.filter((x) => x !== item.id));
-                    }
-                  }}
-                  aria-label={t("delete")}
-                  className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
+                <div className="absolute left-1 top-1 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(t("confirmDeleteMedia"))) {
+                        deleteMediaBlob(item.id);
+                        deleteMedia(item.id);
+                        setPicked((p) => p.filter((x) => x !== item.id));
+                      }
+                    }}
+                    aria-label={t("delete")}
+                    className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const next = window.prompt(t("captionPromptMessage"), item.caption ?? "");
+                      if (next !== null) updateMediaCaption(item.id, next);
+                    }}
+                    aria-label={t("editCaption")}
+                    title={t("editCaption")}
+                    className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  {(item.kind === "video" || item.kind === "audio") && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTrimTarget(item);
+                      }}
+                      aria-label={t("trimMedia")}
+                      title={t("trimMedia")}
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                    >
+                      <Scissors className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                {item.caption && (
+                  <div className="absolute inset-x-0 bottom-0 truncate bg-black/70 px-1.5 py-1 text-[10px] text-white">
+                    {item.caption}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -171,6 +206,12 @@ export function MediaLibraryDialog({
           </Button>
         </div>
       </DialogContent>
+
+      <MediaTrimDialog
+        item={trimTarget}
+        open={trimTarget !== null}
+        onOpenChange={(o) => !o && setTrimTarget(null)}
+      />
     </Dialog>
   );
 }

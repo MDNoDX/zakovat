@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { usedLanguages, type Language, type LocalizedText } from "@/types/quiz";
+import { usedLanguages, type Language, type LocalizedText, type PromptSize } from "@/types/quiz";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { cn } from "@/lib/utils";
 
@@ -11,7 +11,9 @@ const LABEL: Record<Language, string> = { uz: "O'zbekcha", ru: "Русский",
 // where the full language name would crowd out the option text itself.
 const LABEL_SHORT: Record<Language, string> = { uz: "UZ", ru: "RU", en: "EN" };
 
-export type PromptSize = "hero" | "large" | "medium" | "small";
+// Re-exported for existing importers (@/types/quiz is now the canonical
+// source, since Stage-level intro styling also needs this type).
+export type { PromptSize };
 
 const SIZE_CLASS: Record<PromptSize, string> = {
   hero: "text-5xl md:text-6xl",
@@ -34,6 +36,7 @@ export function MultiLangText({
   languages,
   size = "large",
   layout = "stack",
+  align = "center",
   className,
   proseClassName,
   weight = "font-semibold",
@@ -42,6 +45,8 @@ export function MultiLangText({
   languages: Language[];
   size?: PromptSize;
   layout?: "stack" | "inline";
+  /** Only affects the "stack" layout — inline (MC options etc.) is always left-led. */
+  align?: "left" | "center" | "right";
   className?: string;
   proseClassName?: string;
   weight?: string;
@@ -53,6 +58,8 @@ export function MultiLangText({
   if (finalLangs.length === 0) return null;
 
   const showLabels = finalLangs.length > 1;
+  const alignItems = align === "left" ? "items-start" : align === "right" ? "items-end" : "items-center";
+  const textAlignClass = align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center";
 
   if (layout === "inline") {
     return (
@@ -97,7 +104,7 @@ export function MultiLangText({
   }
 
   return (
-    <div className={cn("flex w-full flex-col items-center gap-5", className)}>
+    <div className={cn("flex w-full flex-col gap-5", alignItems, className)}>
       <AnimatePresence mode="popLayout" initial={false}>
         {finalLangs.map((lang, i) => {
           const variant = text?.find((v) => v.language === lang);
@@ -110,7 +117,7 @@ export function MultiLangText({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.25, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
-              className="flex w-full flex-col items-center gap-3"
+              className={cn("flex w-full flex-col gap-3", alignItems)}
             >
               {showLabels && (
                 <span className="flex items-center gap-2 text-base font-bold uppercase tracking-[0.2em] text-muted-foreground/90 md:text-lg">
@@ -120,7 +127,8 @@ export function MultiLangText({
               )}
               <div
                 className={cn(
-                  "editor-content prose max-w-4xl text-center leading-tight tracking-tight",
+                  "editor-content prose max-w-4xl leading-tight tracking-tight",
+                  textAlignClass,
                   weight,
                   SIZE_CLASS[size],
                   proseClassName

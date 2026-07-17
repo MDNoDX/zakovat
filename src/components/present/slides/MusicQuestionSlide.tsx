@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Music, Play, Pause } from "lucide-react";
+import { Music, Play, Pause, AudioLines, BarChart3 } from "lucide-react";
 import { useMediaUrl } from "@/lib/media";
 import { formatTime } from "@/lib/utils";
+import { useWaveformStyleStore } from "@/lib/use-waveform-style";
+import { WaveformCanvas } from "@/components/present/WaveformCanvas";
 import type { MusicQuestion } from "@/types/quiz";
 
 // Per spec: music slides show only the music icon, progress bar, play/pause
@@ -14,6 +16,8 @@ export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const waveformShape = useWaveformStyleStore((s) => s.shape);
+  const toggleWaveformShape = useWaveformStyleStore((s) => s.toggle);
 
   useEffect(() => {
     setPlaying(false);
@@ -59,10 +63,12 @@ export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
           {playing ? <Pause className="h-6 w-6" /> : <Play className="ml-0.5 h-6 w-6" />}
         </button>
         <div className="flex-1">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-accent transition-[width] duration-200"
-              style={{ width: duration ? `${(progress / duration) * 100}%` : "0%" }}
+          <div className="h-12 w-full overflow-hidden rounded-lg">
+            <WaveformCanvas
+              url={url}
+              progress={duration ? progress / duration : 0}
+              shape={waveformShape}
+              className="h-full w-full"
             />
           </div>
           <div className="mt-1.5 flex justify-between text-xs tabular-nums text-muted-foreground">
@@ -70,6 +76,17 @@ export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
             <span>{formatTime(duration)}</span>
           </div>
         </div>
+        <button
+          onClick={toggleWaveformShape}
+          title="Tolqin shakli"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+        >
+          {waveformShape === "bars" ? (
+            <BarChart3 className="h-4 w-4" />
+          ) : (
+            <AudioLines className="h-4 w-4" />
+          )}
+        </button>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 import { useMediaUrl } from "@/lib/media";
 import { isLocalizedTextEmpty, type VideoQuestion, type Language } from "@/types/quiz";
 import { QuestionPrompt } from "@/components/present/QuestionPrompt";
+import { MediaCaption, useMediaCaption } from "@/components/present/MediaCaption";
 
 export function VideoQuestionSlide({
   question,
@@ -12,6 +13,7 @@ export function VideoQuestionSlide({
   languages: Language[];
 }) {
   const url = useMediaUrl(question.mediaId);
+  const caption = useMediaCaption(question.mediaId);
   const hasPrompt = !isLocalizedTextEmpty(question.prompt);
 
   return (
@@ -25,6 +27,7 @@ export function VideoQuestionSlide({
           className="max-h-[70vh] w-full max-w-5xl rounded-2xl border border-white/10 bg-black shadow-soft"
         />
       )}
+      <MediaCaption text={caption} />
     </div>
   );
 }

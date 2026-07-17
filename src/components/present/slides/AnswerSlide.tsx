@@ -1,10 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Music, Pause, Play } from "lucide-react";
+import { AudioLines, BarChart3, Pause, Play } from "lucide-react";
 import { useMediaUrl } from "@/lib/media";
 import { useQuizStore } from "@/lib/store";
 import { formatTime } from "@/lib/utils";
+import { useWaveformStyleStore } from "@/lib/use-waveform-style";
+import { WaveformCanvas } from "@/components/present/WaveformCanvas";
+import { MediaCaption, useMediaCaption } from "@/components/present/MediaCaption";
 import { isLocalizedTextEmpty, type Question, type Language } from "@/types/quiz";
 import { MultipleChoiceSlide } from "@/components/present/slides/MultipleChoiceSlide";
 import { MultiLangText } from "@/components/present/MultiLangText";
@@ -50,6 +53,7 @@ function GenericAnswer({
   const mediaKind = useQuizStore(
     (s) => s.media.find((m) => m.id === question.answer.mediaId)?.kind
   );
+  const mediaCaption = useMediaCaption(question.answer.mediaId);
   const hasCorrect = !isLocalizedTextEmpty(question.answer.correctText);
   const hasExplanation = !isLocalizedTextEmpty(question.answer.explanation);
   const primaryLanguage = languages[0] ?? "uz";
@@ -89,6 +93,7 @@ function GenericAnswer({
           className="max-h-[40vh] max-w-[60vw] rounded-2xl border border-white/10 object-contain"
         />
       )}
+      <MediaCaption text={mediaCaption} />
       {hasExplanation && showExplanation && (
         <MultiLangText
           text={question.answer.explanation}
@@ -107,12 +112,14 @@ function GenericAnswer({
   );
 }
 
-/** Compact play/pause + progress player for an audio answer clip. */
+/** Compact play/pause + waveform player for an audio answer clip. */
 function AnswerAudioPlayer({ url }: { url: string }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const waveformShape = useWaveformStyleStore((s) => s.shape);
+  const toggleWaveformShape = useWaveformStyleStore((s) => s.toggle);
 
   function toggle() {
     const audio = audioRef.current;
@@ -138,20 +145,30 @@ function AnswerAudioPlayer({ url }: { url: string }) {
         {playing ? <Pause className="h-5 w-5" /> : <Play className="ml-0.5 h-5 w-5" />}
       </button>
       <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <Music className="h-3.5 w-3.5 shrink-0 text-accent" />
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-accent transition-[width] duration-200"
-              style={{ width: duration ? `${(progress / duration) * 100}%` : "0%" }}
-            />
-          </div>
+        <div className="h-9 w-full overflow-hidden rounded-md">
+          <WaveformCanvas
+            url={url}
+            progress={duration ? progress / duration : 0}
+            shape={waveformShape}
+            className="h-full w-full"
+          />
         </div>
         <div className="mt-1.5 flex justify-between text-xs tabular-nums text-muted-foreground">
           <span>{formatTime(progress)}</span>
           <span>{formatTime(duration)}</span>
         </div>
       </div>
+      <button
+        onClick={toggleWaveformShape}
+        title="Tolqin shakli"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
+      >
+        {waveformShape === "bars" ? (
+          <BarChart3 className="h-3.5 w-3.5" />
+        ) : (
+          <AudioLines className="h-3.5 w-3.5" />
+        )}
+      </button>
     </div>
   );
 }
