@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { usedLanguages, type Language, type LocalizedText, type PromptSize } from "@/types/quiz";
 import { sanitizeHtml } from "@/lib/sanitize-html";
@@ -51,6 +52,19 @@ export function MultiLangText({
   proseClassName?: string;
   weight?: string;
 }) {
+  // Sanitizing is a real DOM-parse, not a free string op — memoized by the
+  // `text` array reference so re-renders that don't touch this content
+  // (toggling the explanation, stepping a collage reveal, switching
+  // languages on-screen) don't re-run it for every language variant.
+  const sanitizedByLang = useMemo(() => {
+    const map: Partial<Record<Language, string>> = {};
+    for (const variant of text ?? []) {
+      map[variant.language] = sanitizeHtml(variant.content);
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
+
   const used = usedLanguages(text);
   const toShow = languages.filter((l) => used.includes(l));
   const finalLangs = toShow.length > 0 ? toShow : used;
@@ -92,7 +106,7 @@ export function MultiLangText({
                       SIZE_CLASS[size],
                       proseClassName
                     )}
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(variant.content) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizedByLang[lang] ?? "" }}
                   />
                 </div>
               </motion.div>
@@ -133,7 +147,7 @@ export function MultiLangText({
                   SIZE_CLASS[size],
                   proseClassName
                 )}
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(variant.content) }}
+                dangerouslySetInnerHTML={{ __html: sanitizedByLang[lang] ?? "" }}
               />
               {showLabels && i < finalLangs.length - 1 && (
                 <div className="mt-2 h-px w-32 bg-gradient-to-r from-transparent via-white/15 to-transparent" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist, createJSONStorage, type StateStorage } from "zustand/middleware";
 import { createQuestion, createQuiz, createStage } from "@/lib/factories";
 import { uid } from "@/lib/utils";
 import type {
@@ -64,6 +64,59 @@ interface QuizStore {
 function touch<T extends { updatedAt: number }>(obj: T): T {
   return { ...obj, updatedAt: Date.now() };
 }
+
+// Every keystroke in a question/answer editor runs through this store, and
+// zustand's persist middleware writes the *entire* app state to
+// localStorage on every single `set()` by default — for a quiz with many
+// stages/questions that meant a full JSON.stringify of everything on every
+// character typed, which is real, measurable typing lag. This wraps
+// localStorage so writes are coalesced into one every 500ms, while still
+// flushing immediately on tab-hide/unload so nothing is lost if the page
+// closes mid-debounce. Reads stay synchronous and untouched.
+function createDebouncedLocalStorage(delayMs = 500): StateStorage {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let pending: { name: string; value: string } | null = null;
+
+  function flush() {
+    if (typeof window === "undefined") return;
+    if (pending) {
+      window.localStorage.setItem(pending.name, pending.value);
+      pending = null;
+    }
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", flush);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") flush();
+    });
+  }
+
+  return {
+    getItem: (name) => (typeof window === "undefined" ? null : window.localStorage.getItem(name)),
+    setItem: (name, value) => {
+      if (typeof window === "undefined") return;
+      pending = { name, value };
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(flush, delayMs);
+    },
+    removeItem: (name) => {
+      if (typeof window === "undefined") return;
+      pending = null;
+      if (timer) clearTimeout(timer);
+      window.localStorage.removeItem(name);
+    },
+  };
+}
+
+// A single shared instance so the debounce timer/pending-write state
+// actually persists across calls (createJSONStorage invokes this factory
+// on every access, so it must not create a fresh closure each time).
+const debouncedStorageEngine = createDebouncedLocalStorage(500);
 
 function moveItem<T>(arr: T[], from: number, to: number): T[] {
   const copy = arr.slice();
@@ -367,7 +420,7 @@ export const useQuizStore = create<QuizStore>()(
     }),
     {
       name: "zakovat-store",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => debouncedStorageEngine),
       version: 2,
       migrate: (persistedState, version) => {
         const state = persistedState as { quizzes?: unknown; media?: unknown } | undefined;
