@@ -200,7 +200,7 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   const stageName = resolveText(slide.stage.name, primaryLanguage);
 
   const questionMeta =
-    slide.kind === "question" || slide.kind === "answer"
+    slide.kind === "question" || slide.kind === "answer" || slide.kind === "recap"
       ? `${slide.indexInStage + 1} / ${slide.total}`
       : null;
 
@@ -208,7 +208,7 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
     slide.kind === "question" ? slide.question.timerSeconds : null;
 
   const backgroundImageId =
-    slide.kind === "question" || slide.kind === "answer"
+    slide.kind === "question" || slide.kind === "answer" || slide.kind === "recap"
       ? slide.question.backgroundImageId
       : null;
 
@@ -228,9 +228,16 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
             transition={{ duration: 0.2 }}
             className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between px-8 py-6"
           >
-            <span className="text-sm font-medium uppercase tracking-[0.2em] text-white/40">
-              {stageName}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium uppercase tracking-[0.2em] text-white/40">
+                {stageName}
+              </span>
+              {slide.kind === "recap" && (
+                <span className="rounded-full bg-accent/20 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+                  {tFor("recapLabel", primaryLanguage)}
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-4">
               {questionMeta && (
                 <span className="text-sm font-medium tabular-nums text-white/40">
@@ -347,6 +354,34 @@ function SlideRenderer({
         case "video":
           return <VideoQuestionSlide question={question} languages={languages} />;
       }
+      break;
+    }
+    // Recap: the same question body as above, but always fully revealed
+    // (no partial collage reveal, no re-running timer) — this is a reminder
+    // shown right before the answer in bulk-reveal mode, not a re-ask.
+    case "recap": {
+      const { question } = slide;
+      switch (question.type) {
+        case "text":
+          return <TextQuestionSlide question={question} languages={languages} />;
+        case "multiple-choice":
+          return <MultipleChoiceSlide question={question} languages={languages} />;
+        case "image":
+          return <ImageQuestionSlide question={question} languages={languages} />;
+        case "multi-image":
+          return (
+            <MultiImageSlide
+              question={question}
+              languages={languages}
+              revealCount={question.mediaIds.length}
+            />
+          );
+        case "music":
+          return <MusicQuestionSlide question={question} />;
+        case "video":
+          return <VideoQuestionSlide question={question} languages={languages} />;
+      }
+      break;
     }
   }
 }

@@ -147,6 +147,11 @@ export const UI_STRINGS = {
 
   // Presentation-mode audience-facing chrome (driven by content language)
   correctAnswerLabel: { uz: "To'g'ri javob", ru: "Правильный ответ", en: "Correct answer" },
+  recapLabel: {
+    uz: "Savolni eslaymiz",
+    ru: "Вспомним вопрос",
+    en: "Recalling the question",
+  },
   answerNotProvided: {
     uz: "Javob kiritilmagan",
     ru: "Ответ не указан",
@@ -207,9 +212,9 @@ export const UI_STRINGS = {
     en: "Extra explanation...",
   },
   answerImageLabel: {
-    uz: "Javob rasmi (ixtiyoriy)",
-    ru: "Изображение ответа (необязательно)",
-    en: "Answer image (optional)",
+    uz: "Javob uchun rasm, video yoki audio (ixtiyoriy)",
+    ru: "Фото, видео или аудио для ответа (необязательно)",
+    en: "Image, video, or audio for the answer (optional)",
   },
   replaceMedia: { uz: "Almashtirish", ru: "Заменить", en: "Replace" },
   chooseFile: { uz: "Fayl tanlash", ru: "Выбрать файл", en: "Choose file" },

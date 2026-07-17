@@ -53,6 +53,9 @@ export function QuestionEditorPanel({
   const updateQuestion = useQuizStore((s) => s.updateQuestion);
   const deleteQuestion = useQuizStore((s) => s.deleteQuestion);
   const duplicateQuestion = useQuizStore((s) => s.duplicateQuestion);
+  const answerMediaItem = useQuizStore((s) =>
+    s.media.find((m) => m.id === question.answer.mediaId)
+  );
   const [mediaTarget, setMediaTarget] = useState<MediaTarget>(null);
   const t = useT();
   const uiLanguage = useUiLanguageStore((s) => s.language);
@@ -218,7 +221,7 @@ export function QuestionEditorPanel({
             </p>
             <SingleMediaField
               mediaId={question.answer.mediaId}
-              kind="image"
+              kind={answerMediaItem?.kind ?? "image"}
               onPick={() => setMediaTarget("answer")}
               onClear={() => patch({ answer: { ...question.answer, mediaId: null } })}
             />
@@ -229,7 +232,13 @@ export function QuestionEditorPanel({
       <MediaLibraryDialog
         open={mediaTarget !== null}
         onOpenChange={(o) => !o && setMediaTarget(null)}
-        filterKind={mediaTarget === "primary" ? mediaKindForTarget : "image"}
+        filterKind={
+          mediaTarget === "primary"
+            ? mediaKindForTarget
+            : mediaTarget === "answer"
+            ? ["image", "video", "audio"]
+            : "image"
+        }
         multiple={mediaTarget === "multi-add"}
         onSelect={(ids) => {
           if (mediaTarget === "primary") {

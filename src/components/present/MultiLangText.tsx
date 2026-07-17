@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 
 const FLAG: Record<Language, string> = { uz: "🇺🇿", ru: "🇷🇺", en: "🇬🇧" };
 const LABEL: Record<Language, string> = { uz: "O'zbekcha", ru: "Русский", en: "English" };
+// Compact form used in tighter spaces (e.g. multiple-choice option rows)
+// where the full language name would crowd out the option text itself.
+const LABEL_SHORT: Record<Language, string> = { uz: "UZ", ru: "RU", en: "EN" };
 
 export type PromptSize = "hero" | "large" | "medium" | "small";
 
@@ -68,10 +71,11 @@ export function MultiLangText({
                 transition={{ duration: 0.2 }}
                 className={cn(i > 0 && "border-t border-white/10 pt-2")}
               >
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2.5">
                   {showLabels && (
-                    <span className="mt-0.5 shrink-0 text-sm leading-none opacity-80">
-                      {FLAG[lang]}
+                    <span className="mt-0.5 flex shrink-0 items-center gap-1.5 text-sm font-bold leading-none tracking-wide text-muted-foreground/90">
+                      <span className="text-lg leading-none">{FLAG[lang]}</span>
+                      {LABEL_SHORT[lang]}
                     </span>
                   )}
                   <div
@@ -109,8 +113,8 @@ export function MultiLangText({
               className="flex w-full flex-col items-center gap-3"
             >
               {showLabels && (
-                <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground/70">
-                  <span className="text-base leading-none">{FLAG[lang]}</span>
+                <span className="flex items-center gap-2 text-base font-bold uppercase tracking-[0.2em] text-muted-foreground/90 md:text-lg">
+                  <span className="text-2xl leading-none">{FLAG[lang]}</span>
                   {LABEL[lang]}
                 </span>
               )}

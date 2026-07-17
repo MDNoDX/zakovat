@@ -21,8 +21,8 @@ import { useT } from "@/lib/i18n";
 interface MediaLibraryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Restrict uploads/selection to a single kind (image | video | audio) or allow all. */
-  filterKind?: MediaKind;
+  /** Restrict uploads/selection to one or more kinds (image | video | audio) or allow all. */
+  filterKind?: MediaKind | MediaKind[];
   /** Allow picking more than one item in a single session (used for multi-image questions). */
   multiple?: boolean;
   onSelect?: (mediaIds: string[]) => void;
@@ -43,23 +43,24 @@ export function MediaLibraryDialog({
   const [uploading, setUploading] = useState(false);
   const t = useT();
 
-  const items = filterKind ? media.filter((m) => m.kind === filterKind) : media;
+  const allowedKinds = filterKind ? (Array.isArray(filterKind) ? filterKind : [filterKind]) : null;
+  const items = allowedKinds ? media.filter((m) => allowedKinds.includes(m.kind)) : media;
 
-  const accept =
-    filterKind === "image"
-      ? "image/*"
-      : filterKind === "video"
-      ? "video/*"
-      : filterKind === "audio"
-      ? "audio/*"
-      : "image/*,video/*,audio/*";
+  const MIME_BY_KIND: Record<MediaKind, string> = {
+    image: "image/*",
+    video: "video/*",
+    audio: "audio/*",
+  };
+  const accept = allowedKinds
+    ? allowedKinds.map((k) => MIME_BY_KIND[k]).join(",")
+    : "image/*,video/*,audio/*";
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
     setUploading(true);
     for (const file of Array.from(files)) {
       const kind = mediaKindFromMime(file.type);
-      if (filterKind && kind !== filterKind) continue;
+      if (allowedKinds && !allowedKinds.includes(kind)) continue;
       const id = uid();
       await saveMediaBlob(id, file);
       let dims: { width: number; height: number } | undefined;
