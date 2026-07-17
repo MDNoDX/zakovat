@@ -86,6 +86,25 @@ export const UI_STRINGS = {
     en: "Create a stage on the left to get started",
   },
 
+  // Quiz-level settings panel
+  quizSettingsLabel: { uz: "Zakovat sozlamalari", ru: "Настройки викторины", en: "Quiz settings" },
+  quizSettingsHeading: {
+    uz: "Umumiy ma'lumotlar",
+    ru: "Общая информация",
+    en: "General information",
+  },
+  defaultLanguageLabel: {
+    uz: "Asosiy til",
+    ru: "Основной язык",
+    en: "Default language",
+  },
+  defaultLanguageHint: {
+    uz: "Taqdimot boshlanganda birinchi tanlanadigan til.",
+    ru: "Язык, выбранный первым при запуске презентации.",
+    en: "The language selected first when a presentation starts.",
+  },
+  quizOverviewLabel: { uz: "Umumiy holat", ru: "Обзор", en: "Overview" },
+
   // Stage settings panel
   stageSettingsLabel: { uz: "Bosqich sozlamalari", ru: "Настройки этапа", en: "Stage settings" },
   introAndRules: {

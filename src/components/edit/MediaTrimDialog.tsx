@@ -11,10 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQuizStore } from "@/lib/store";
 import { useMediaUrl, saveMediaBlob } from "@/lib/media";
-import { isTrimSupported, trimMedia, TrimError } from "@/lib/media-trim";
-import { uid, formatTime } from "@/lib/utils";
+import { isTrimSupported, trimMedia } from "@/lib/media-trim";
+import { uid } from "@/lib/utils";
 import type { MediaItem } from "@/types/quiz";
 import { useT } from "@/lib/i18n";
+import { TrimScrubber } from "@/components/edit/TrimScrubber";
 
 export function MediaTrimDialog({
   item,
@@ -51,6 +52,21 @@ export function MediaTrimDialog({
     const d = e.currentTarget.duration || 0;
     setDuration(d);
     setEnd(d);
+  }
+
+  // Preview playback stays inside the selected range: starting playback
+  // before `start` jumps forward to it, and reaching `end` pauses — so
+  // scrubbing the handles and hitting play always previews exactly what
+  // will be saved, like a mobile audio/video trimmer.
+  function handlePreviewTimeUpdate(e: SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) {
+    const el = e.currentTarget;
+    if (el.currentTime < start) el.currentTime = start;
+    if (el.currentTime >= end) el.pause();
+  }
+
+  function handlePreviewPlay(e: SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) {
+    const el = e.currentTarget;
+    if (el.currentTime < start || el.currentTime >= end) el.currentTime = start;
   }
 
   async function handleSave() {
@@ -103,42 +119,31 @@ export function MediaTrimDialog({
                 controls
                 className="w-full rounded-xl border border-border bg-black"
                 onLoadedMetadata={handleLoadedMetadata}
+                onTimeUpdate={handlePreviewTimeUpdate}
+                onPlay={handlePreviewPlay}
               />
             )}
             {url && item.kind === "audio" && (
-              <audio src={url} controls className="w-full" onLoadedMetadata={handleLoadedMetadata} />
+              <audio
+                src={url}
+                controls
+                className="w-full"
+                onLoadedMetadata={handleLoadedMetadata}
+                onTimeUpdate={handlePreviewTimeUpdate}
+                onPlay={handlePreviewPlay}
+              />
             )}
 
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                <span>{t("trimStartLabel")}</span>
-                <span className="tabular-nums">{formatTime(start)}</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={duration || 0}
-                step={0.1}
-                value={start}
-                onChange={(e) => setStart(Math.min(Number(e.target.value), Math.max(end - 0.2, 0)))}
-                className="w-full accent-accent"
-              />
-            </div>
-            <div>
-              <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-                <span>{t("trimEndLabel")}</span>
-                <span className="tabular-nums">{formatTime(end)}</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={duration || 0}
-                step={0.1}
-                value={end}
-                onChange={(e) => setEnd(Math.max(Number(e.target.value), start + 0.2))}
-                className="w-full accent-accent"
-              />
-            </div>
+            <TrimScrubber
+              url={url}
+              duration={duration}
+              start={start}
+              end={end}
+              onChange={(s, e) => {
+                setStart(s);
+                setEnd(e);
+              }}
+            />
 
             {item.kind === "video" && (
               <label className="flex items-center gap-2 text-xs text-muted-foreground">

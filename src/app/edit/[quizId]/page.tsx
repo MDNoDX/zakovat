@@ -8,6 +8,7 @@ import { DndRoot } from "@/components/edit/DndRoot";
 import { Sidebar } from "@/components/edit/Sidebar";
 import { StageSettingsPanel } from "@/components/edit/StageSettingsPanel";
 import { QuestionEditorPanel } from "@/components/edit/QuestionEditorPanel";
+import { QuizSettingsPanel } from "@/components/edit/QuizSettingsPanel";
 import { MediaLibraryDialog } from "@/components/edit/MediaLibraryDialog";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -18,6 +19,7 @@ export default function EditPage({ params }: { params: { quizId: string } }) {
   const t = useT();
   const [mounted, setMounted] = useState(false);
   const [mediaLibraryOpen, setMediaLibraryOpen] = useState(false);
+  const [showQuizSettings, setShowQuizSettings] = useState(false);
   const [selection, setSelection] = useState<{
     stageId: string | null;
     questionId: string | null;
@@ -59,9 +61,17 @@ export default function EditPage({ params }: { params: { quizId: string } }) {
         <Sidebar
           quizId={quiz.id}
           selection={selection}
-          onSelectStage={(stageId) => setSelection({ stageId, questionId: null })}
-          onSelectQuestion={(stageId, questionId) => setSelection({ stageId, questionId })}
+          quizSettingsActive={showQuizSettings}
+          onSelectStage={(stageId) => {
+            setShowQuizSettings(false);
+            setSelection({ stageId, questionId: null });
+          }}
+          onSelectQuestion={(stageId, questionId) => {
+            setShowQuizSettings(false);
+            setSelection({ stageId, questionId });
+          }}
           onOpenMediaLibrary={() => setMediaLibraryOpen(true)}
+          onOpenQuizSettings={() => setShowQuizSettings(true)}
         />
 
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -79,7 +89,9 @@ export default function EditPage({ params }: { params: { quizId: string } }) {
           </header>
 
           <main className="flex-1 overflow-y-auto">
-            {activeQuestion && activeStage ? (
+            {showQuizSettings ? (
+              <QuizSettingsPanel quiz={quiz} />
+            ) : activeQuestion && activeStage ? (
               <QuestionEditorPanel
                 quizId={quiz.id}
                 stageId={activeStage.id}

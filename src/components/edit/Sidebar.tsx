@@ -1,26 +1,32 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Image as ImageIcon, ArrowLeft, Search, X } from "lucide-react";
+import { Plus, Image as ImageIcon, ArrowLeft, Search, X, Settings2 } from "lucide-react";
 import Link from "next/link";
 import { useQuizStore } from "@/lib/store";
 import { StageItem } from "@/components/edit/StageItem";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { localizedTextMatches } from "@/types/quiz";
 
 export function Sidebar({
   quizId,
   selection,
+  quizSettingsActive,
   onSelectStage,
   onSelectQuestion,
   onOpenMediaLibrary,
+  onOpenQuizSettings,
 }: {
   quizId: string;
   selection: { stageId: string | null; questionId: string | null };
+  /** True while the quiz-level settings panel (not a stage/question) is open. */
+  quizSettingsActive: boolean;
   onSelectStage: (stageId: string) => void;
   onSelectQuestion: (stageId: string, questionId: string) => void;
   onOpenMediaLibrary: () => void;
+  onOpenQuizSettings: () => void;
 }) {
   const quiz = useQuizStore((s) => s.quizzes.find((q) => q.id === quizId));
   const addStage = useQuizStore((s) => s.addStage);
@@ -46,11 +52,31 @@ export function Sidebar({
       <div className="flex items-center gap-2 border-b border-border px-3 py-3">
         <Link
           href="/"
-          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <span className="truncate text-sm font-semibold">{quiz.title}</span>
+        <button
+          onClick={onOpenQuizSettings}
+          title={t("quizSettingsLabel")}
+          className={cn(
+            "min-w-0 flex-1 truncate rounded-lg px-1.5 py-1 text-left text-sm font-semibold transition-colors hover:bg-foreground/5",
+            quizSettingsActive && "bg-accent/15 text-accent"
+          )}
+        >
+          {quiz.title}
+        </button>
+        <button
+          onClick={onOpenQuizSettings}
+          title={t("quizSettingsLabel")}
+          aria-label={t("quizSettingsLabel")}
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-foreground/5 hover:text-foreground",
+            quizSettingsActive && "text-accent"
+          )}
+        >
+          <Settings2 className="h-3.5 w-3.5" />
+        </button>
       </div>
 
       <div className="border-b border-border p-2">

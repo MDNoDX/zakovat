@@ -25,7 +25,10 @@ interface QuizStore {
   installQuiz: (quiz: Quiz) => void;
   deleteQuiz: (quizId: string) => void;
   duplicateQuiz: (quizId: string) => string | undefined;
-  updateQuizTitle: (quizId: string, title: string) => void;
+  updateQuiz: (
+    quizId: string,
+    patch: Partial<Pick<Quiz, "title" | "description" | "defaultLanguage">>
+  ) => void;
   getQuiz: (quizId: string) => Quiz | undefined;
 
   // Stage-level
@@ -176,11 +179,9 @@ export const useQuizStore = create<QuizStore>()(
         return cloned.id;
       },
 
-      updateQuizTitle: (quizId, title) =>
+      updateQuiz: (quizId, patch) =>
         set((s) => ({
-          quizzes: s.quizzes.map((q) =>
-            q.id === quizId ? touch({ ...q, title }) : q
-          ),
+          quizzes: s.quizzes.map((q) => (q.id === quizId ? touch({ ...q, ...patch }) : q)),
         })),
 
       getQuiz: (quizId) => get().quizzes.find((q) => q.id === quizId),

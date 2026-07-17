@@ -1,17 +1,28 @@
 "use client";
 
 // In-browser media trimming (and video -> audio-only extraction) with zero
-// new dependencies: no ffmpeg.wasm, no server round-trip. It works by
-// playing the source off-screen between `start` and `end`, capturing its
-// video track (if any) via HTMLMediaElement.captureStream() and its audio
-// track *silently* via the Web Audio API (MediaElementSource -> a
-// MediaStreamDestination that is never connected to the speakers), then
-// re-encoding that combined stream with MediaRecorder. The user never hears
-// the clip playing back while it's being processed.
+// new dependencies: no ffmpeg.wasm, no server round-trip. It plays the
+// source off-screen between `start` and `end` and re-encodes it with
+// MediaRecorder.
 //
-// Browser support: captureStream() is solid on Chrome/Edge/Firefox but
-// still inconsistent on Safari, so callers should check isTrimSupported()
-// first and show a clear fallback message when it returns false.
+// Two separate capture paths are used on purpose, never mixed on the same
+// element:
+//  - Audio-only output (source is audio, or "extract audio only" from a
+//    video) goes through the Web Audio API alone: MediaElementSource ->
+//    MediaStreamDestination, which is never connected to speakers, so
+//    processing is silent. This is the common case and the one worth
+//    keeping silent.
+//  - Video output (video kept) uses HTMLMediaElement.captureStream() alone,
+//    which hands back synchronized video+audio tracks from one place.
+//    Mixing this with a separate Web Audio graph on the very same element
+//    was the source of unreliable output (audio tracks going silent or out
+//    of sync) — so for this path the clip does play audibly while it's
+//    being processed, which is an acceptable trade-off for a less common
+//    case.
+//
+// The output length is controlled with a precise setTimeout instead of
+// polling `timeupdate` (which only fires a few times a second and made the
+// old version overshoot / cut off early).
 
 export interface TrimOptions {
   /** Start time, in seconds. */
@@ -32,6 +43,11 @@ export function isTrimSupported(): boolean {
   if (typeof MediaRecorder === "undefined") return false;
   const probe = document.createElement("video") as CaptureStreamElement;
   return typeof probe.captureStream === "function" || typeof probe.mozCaptureStream === "function";
+}
+
+function getAudioContextCtor(): typeof AudioContext | null {
+  const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+  return w.AudioContext ?? w.webkitAudioContext ?? null;
 }
 
 function captureStreamOf(el: CaptureStreamElement): MediaStream {
@@ -58,7 +74,8 @@ export type TrimErrorCode =
   | "CAPTURE_FAILED"
   | "RECORDER_INIT_FAILED"
   | "RECORD_FAILED"
-  | "PLAYBACK_FAILED";
+  | "PLAYBACK_FAILED"
+  | "EMPTY_OUTPUT";
 
 export class TrimError extends Error {
   code: TrimErrorCode;
@@ -71,7 +88,8 @@ export class TrimError extends Error {
 /**
  * Trims (and optionally strips the video from) a media blob, returning a
  * new Blob for the requested [start, end] range. Must be called from a
- * user-gesture context (a click handler) since it opens an AudioContext.
+ * user-gesture context (a click handler), since the audio-only path opens
+ * an AudioContext.
  */
 export function trimMedia(
   sourceUrl: string,
@@ -84,11 +102,12 @@ export function trimMedia(
       return;
     }
 
+    const outputIsVideo = sourceKind === "video" && !audioOnly;
+
     const el = document.createElement(
       sourceKind === "video" ? "video" : "audio"
     ) as CaptureStreamElement;
     el.src = sourceUrl;
-    el.crossOrigin = "anonymous";
     el.preload = "auto";
     el.style.position = "fixed";
     el.style.opacity = "0";
@@ -98,9 +117,11 @@ export function trimMedia(
     document.body.appendChild(el);
 
     let audioCtx: AudioContext | null = null;
+    let stopTimer: ReturnType<typeof setTimeout> | null = null;
     let settled = false;
 
     const cleanup = () => {
+      if (stopTimer) clearTimeout(stopTimer);
       el.pause();
       el.remove();
       audioCtx?.close().catch(() => {});
@@ -117,6 +138,10 @@ export function trimMedia(
       if (settled) return;
       settled = true;
       cleanup();
+      if (blob.size === 0) {
+        reject(new TrimError("EMPTY_OUTPUT"));
+        return;
+      }
       resolve(blob);
     };
 
@@ -131,37 +156,33 @@ export function trimMedia(
       el.currentTime = start;
 
       el.onseeked = () => {
-        let rawStream: MediaStream;
-        try {
-          rawStream = captureStreamOf(el);
-        } catch {
-          fail(new TrimError("CAPTURE_FAILED"));
-          return;
-        }
-
-        const outputIsVideo = sourceKind === "video" && !audioOnly;
         let finalStream: MediaStream;
 
-        try {
-          const AudioCtx =
-            window.AudioContext ||
-            (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-          if (!AudioCtx) throw new Error("no AudioContext");
-          audioCtx = new AudioCtx();
-          const source = audioCtx.createMediaElementSource(el);
-          const dest = audioCtx.createMediaStreamDestination();
-          source.connect(dest);
-          // Deliberately not connecting to audioCtx.destination — this is
-          // what keeps the trim silent instead of blasting through speakers.
-          const audioTracks = dest.stream.getAudioTracks();
-          const videoTracks = outputIsVideo ? rawStream.getVideoTracks() : [];
-          finalStream = new MediaStream([...videoTracks, ...audioTracks]);
-        } catch {
-          // Fall back to the raw captured stream (audible during processing)
-          // if silent routing via Web Audio isn't available for some reason.
-          finalStream = outputIsVideo
-            ? rawStream
-            : new MediaStream(rawStream.getAudioTracks());
+        if (outputIsVideo) {
+          try {
+            finalStream = captureStreamOf(el);
+          } catch {
+            fail(new TrimError("CAPTURE_FAILED"));
+            return;
+          }
+        } else {
+          const AudioCtx = getAudioContextCtor();
+          if (!AudioCtx) {
+            fail(new TrimError("CAPTURE_FAILED"));
+            return;
+          }
+          try {
+            audioCtx = new AudioCtx();
+            const source = audioCtx.createMediaElementSource(el);
+            const dest = audioCtx.createMediaStreamDestination();
+            source.connect(dest);
+            // Deliberately not connected to audioCtx.destination — this is
+            // what keeps the trim silent instead of playing out loud.
+            finalStream = dest.stream;
+          } catch {
+            fail(new TrimError("CAPTURE_FAILED"));
+            return;
+          }
         }
 
         const outputKind: "video" | "audio" = outputIsVideo ? "video" : "audio";
@@ -181,20 +202,23 @@ export function trimMedia(
         recorder.onerror = () => fail(new TrimError("RECORD_FAILED"));
         recorder.onstop = () => succeed(new Blob(chunks, { type: mimeType }));
 
-        const onTimeUpdate = () => {
-          if (el.currentTime >= clampedEnd || el.ended) {
-            el.removeEventListener("timeupdate", onTimeUpdate);
-            if (recorder.state !== "inactive") recorder.stop();
-          }
+        const stop = () => {
+          if (recorder.state !== "inactive") recorder.stop();
         };
-        el.addEventListener("timeupdate", onTimeUpdate);
+        el.onended = stop;
 
         recorder.start();
-        el.play().catch(() => {
-          el.removeEventListener("timeupdate", onTimeUpdate);
-          if (recorder.state !== "inactive") recorder.stop();
-          fail(new TrimError("PLAYBACK_FAILED"));
-        });
+        el.play()
+          .then(() => {
+            // A precise, deterministic stop instead of polling
+            // `timeupdate` (which only fires a handful of times a second
+            // and made the previous version overshoot the requested end).
+            const durationMs = (clampedEnd - start) * 1000;
+            stopTimer = setTimeout(stop, durationMs + 60);
+          })
+          .catch(() => {
+            fail(new TrimError("PLAYBACK_FAILED"));
+          });
       };
     };
   });
