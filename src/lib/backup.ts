@@ -102,6 +102,19 @@ function sanitizeLocalizedText(value: unknown): LocalizedText {
     }));
 }
 
+function sanitizeQuizDescription(value: unknown): LocalizedText | undefined {
+  if (Array.isArray(value)) {
+    const result = sanitizeLocalizedText(value);
+    return result.length > 0 ? result : undefined;
+  }
+  // Backups exported before the quiz-level description became rich text
+  // stored it as a plain string — wrap it so older backups still import.
+  if (typeof value === "string" && value.trim() !== "") {
+    return [{ language: "uz", content: sanitizeHtml(`<p>${value.trim()}</p>`) }];
+  }
+  return undefined;
+}
+
 export interface ImportResult {
   quizzesAdded: number;
   mediaAdded: number;
@@ -250,7 +263,7 @@ export async function importBackup(file: File): Promise<ImportResult> {
     const quiz: Quiz = {
       id: uid(),
       title: typeof rawQuiz.title === "string" ? rawQuiz.title : "Import qilingan Zakovat",
-      description: typeof rawQuiz.description === "string" ? rawQuiz.description : undefined,
+      description: sanitizeQuizDescription(rawQuiz.description),
       defaultLanguage:
         rawQuiz.defaultLanguage === "ru" || rawQuiz.defaultLanguage === "en"
           ? rawQuiz.defaultLanguage

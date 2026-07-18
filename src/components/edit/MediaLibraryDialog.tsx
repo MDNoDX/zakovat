@@ -211,6 +211,20 @@ export function MediaLibraryDialog({
         item={trimTarget}
         open={trimTarget !== null}
         onOpenChange={(o) => !o && setTrimTarget(null)}
+        onSaved={(newItem) => {
+          // If this library session is picking media for a specific field
+          // (onSelect exists), the trimmed clip IS what the user wants
+          // attached — apply it immediately instead of leaving them to find
+          // and re-select the new "(trim)" copy by hand. Otherwise (plain
+          // library management) just highlight it as picked.
+          if (onSelect) {
+            onSelect([newItem.id]);
+            setPicked([]);
+            onOpenChange(false);
+          } else {
+            setPicked([newItem.id]);
+          }
+        }}
       />
     </Dialog>
   );

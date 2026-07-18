@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { AudioLines, BarChart3, Pause, Play } from "lucide-react";
+import { Pause, Play, Waves } from "lucide-react";
 import { useMediaUrl } from "@/lib/media";
 import { useQuizStore } from "@/lib/store";
 import { formatTime } from "@/lib/utils";
-import { useWaveformStyleStore } from "@/lib/use-waveform-style";
+import { useWaveformStyleStore, WAVEFORM_SHAPE_LABEL } from "@/lib/use-waveform-style";
 import { WaveformCanvas } from "@/components/present/WaveformCanvas";
 import { MediaCaption, useMediaCaption } from "@/components/present/MediaCaption";
 import { isLocalizedTextEmpty, type Question, type Language } from "@/types/quiz";
@@ -160,14 +160,10 @@ function AnswerAudioPlayer({ url }: { url: string }) {
       </div>
       <button
         onClick={toggleWaveformShape}
-        title="Tolqin shakli"
+        title={`To'lqin shakli: ${WAVEFORM_SHAPE_LABEL[waveformShape]}`}
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
       >
-        {waveformShape === "bars" ? (
-          <BarChart3 className="h-3.5 w-3.5" />
-        ) : (
-          <AudioLines className="h-3.5 w-3.5" />
-        )}
+        <Waves className="h-3.5 w-3.5" />
       </button>
     </div>
   );

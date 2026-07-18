@@ -165,8 +165,8 @@ export function StageItem({
               ))}
               {!searchQuery && (
                 <AddQuestionMenu
-                  onPick={(type) => {
-                    const id = addQuestion(quizId, stage.id, type);
+                  onPick={(type, prompt) => {
+                    const id = addQuestion(quizId, stage.id, type, prompt);
                     onSelectQuestion(stage.id, id);
                   }}
                 >

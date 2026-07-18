@@ -20,7 +20,7 @@ interface QuizStore {
   media: MediaItem[];
 
   // Quiz-level
-  createQuiz: (title: string, description?: string) => string;
+  createQuiz: (title: string, description?: LocalizedText) => string;
   /** Inserts an already-fully-built quiz object as-is (used by the demo-quiz installer). */
   installQuiz: (quiz: Quiz) => void;
   deleteQuiz: (quizId: string) => void;
@@ -39,7 +39,12 @@ interface QuizStore {
   duplicateStage: (quizId: string, stageId: string) => void;
 
   // Question-level
-  addQuestion: (quizId: string, stageId: string, type: QuestionType) => string;
+  addQuestion: (
+    quizId: string,
+    stageId: string,
+    type: QuestionType,
+    prompt?: LocalizedText
+  ) => string;
   updateQuestion: (
     quizId: string,
     stageId: string,
@@ -128,8 +133,10 @@ function moveItem<T>(arr: T[], from: number, to: number): T[] {
 // --- Legacy data migration -------------------------------------------------
 // Versions before 2 stored every text field as a fixed { uz, ru, en } object.
 // Version 2 switched to an ordered array of { language, content } variants
-// that the presenter builds up freely. This converts old persisted data on
-// load so a quiz created before the change keeps working instead of crashing.
+// that the presenter builds up freely. Version 3 brought the quiz-level
+// `description` field into that same rich, multi-language model (it used to
+// be a single plain string). This converts old persisted data on load so a
+// quiz created before either change keeps working instead of crashing.
 
 function isLegacyLocalizedText(value: unknown): value is Record<string, string> {
   return (
@@ -154,6 +161,20 @@ function migrateLocalizedText(value: unknown): LocalizedText {
   return [{ language: "uz" as Language, content: "" }];
 }
 
+/** Plain string (pre-v3) -> a single-paragraph rich-text variant; already-migrated
+ * arrays pass through untouched; anything else/empty collapses to undefined. */
+function migrateQuizDescription(value: unknown): LocalizedText | undefined {
+  if (Array.isArray(value)) return value.length > 0 ? migrateLocalizedText(value) : undefined;
+  if (typeof value === "string" && value.trim() !== "") {
+    return [{ language: "uz" as Language, content: `<p>${escapeHtml(value.trim())}</p>` }];
+  }
+  return undefined;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function migrateQuizzes(quizzes: unknown): Quiz[] {
   if (!Array.isArray(quizzes)) return [];
   return quizzes.map((rawQuiz) => {
@@ -161,6 +182,7 @@ function migrateQuizzes(quizzes: unknown): Quiz[] {
     const stages = Array.isArray(q.stages) ? q.stages : [];
     return {
       ...(q as object),
+      description: migrateQuizDescription(q.description),
       stages: stages.map((rawStage) => {
         const st = rawStage as Record<string, unknown>;
         const questions = Array.isArray(st.questions) ? st.questions : [];
@@ -306,8 +328,8 @@ export const useQuizStore = create<QuizStore>()(
           }),
         })),
 
-      addQuestion: (quizId, stageId, type) => {
-        const question = createQuestion(type);
+      addQuestion: (quizId, stageId, type, prompt) => {
+        const question = prompt ? { ...createQuestion(type), prompt } : createQuestion(type);
         set((s) => ({
           quizzes: s.quizzes.map((q) =>
             q.id !== quizId
@@ -421,11 +443,11 @@ export const useQuizStore = create<QuizStore>()(
     {
       name: "zakovat-store",
       storage: createJSONStorage(() => debouncedStorageEngine),
-      version: 2,
+      version: 3,
       migrate: (persistedState, version) => {
         const state = persistedState as { quizzes?: unknown; media?: unknown } | undefined;
         if (!state) return state;
-        if (version < 2) {
+        if (version < 3) {
           return {
             ...state,
             quizzes: migrateQuizzes(state.quizzes),

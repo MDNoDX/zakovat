@@ -39,6 +39,16 @@ export const UI_STRINGS = {
   nameLabel: { uz: "Nomi", ru: "Название", en: "Name" },
   descriptionLabel: { uz: "Tavsif", ru: "Описание", en: "Description" },
   optional: { uz: "(ixtiyoriy)", ru: "(необязательно)", en: "(optional)" },
+  useRulesTemplate: {
+    uz: "Qoidalar shabloni",
+    ru: "Шаблон правил",
+    en: "Rules template",
+  },
+  quizDescriptionHint: {
+    uz: "Boshlash ekranida ko'rsatiladi — shartlar va ball olish tartibini shu yerga yozing.",
+    ru: "Показывается на стартовом экране — опишите здесь правила и систему начисления баллов.",
+    en: "Shown on the start screen — describe the rules and scoring here.",
+  },
   descriptionPlaceholder: {
     uz: "Bu zakovat haqida qisqacha izoh...",
     ru: "Краткое описание этой викторины...",
@@ -268,6 +278,8 @@ export const UI_STRINGS = {
     ru: "Введите текст вопроса...",
     en: "Write the question here...",
   },
+  quickAddTypeLabel: { uz: "Savol turi", ru: "Тип вопроса", en: "Question type" },
+  quickAddSubmit: { uz: "Qo'shish", ru: "Добавить", en: "Add" },
   optionsLabel: { uz: "Variantlar", ru: "Варианты", en: "Options" },
   optionsHint: {
     uz: "To'g'ri javobni doiraga bosib belgilang",
@@ -282,7 +294,34 @@ export const UI_STRINGS = {
   addOption: { uz: "Variant qo'shish", ru: "Добавить вариант", en: "Add option" },
   imageLabel: { uz: "Rasm", ru: "Изображение", en: "Image" },
   audioFileLabel: { uz: "Audio fayl", ru: "Аудиофайл", en: "Audio file" },
+  audioStartPointLabel: {
+    uz: "Boshlanish nuqtasi",
+    ru: "Точка начала",
+    en: "Start point",
+  },
+  audioStartPointHint: {
+    uz: "Taqdimotda audio shu vaqtdan boshlanadi (faylning o'zi o'zgarmaydi)",
+    ru: "В презентации аудио начнётся с этой отметки (сам файл не меняется)",
+    en: "Playback in presentation starts here (the file itself is untouched)",
+  },
   videoFileLabel: { uz: "Video fayl", ru: "Видеофайл", en: "Video file" },
+  videoDisplaySizeLabel: {
+    uz: "Ekranda ko'rinishi",
+    ru: "Отображение на экране",
+    en: "Screen display",
+  },
+  videoSizeContain: { uz: "Konteynerda", ru: "В рамке", en: "Contained" },
+  videoSizeContainHint: {
+    uz: "Video to'liq ko'rinadi, atrofida joy qoladi",
+    ru: "Видео полностью видно, вокруг остаётся поле",
+    en: "Whole video visible, framed with space around it",
+  },
+  videoSizeCover: { uz: "To'liq ekran", ru: "Во весь экран", en: "Full screen" },
+  videoSizeCoverHint: {
+    uz: "Ekranni to'liq qoplaydi, chetlari qirqilishi mumkin",
+    ru: "Заполняет весь экран, края могут обрезаться",
+    en: "Fills the whole screen, edges may be cropped",
+  },
   imagesLabel: { uz: "Rasmlar", ru: "Изображения", en: "Images" },
   backgroundImageLabel: {
     uz: "Fon rasm (ixtiyoriy)",
@@ -444,6 +483,22 @@ export function tFor(key: UiStringKey, language: Language): string {
 export function useT() {
   const language = useUiLanguageStore((s) => s.language);
   return (key: UiStringKey): string => tFor(key, language);
+}
+
+/**
+ * A ready-made starting point for the quiz-level description: a brief
+ * explanation of the rules plus a simple scoring scheme — exactly the kind
+ * of content the presenter is expected to fill in there, just pre-written
+ * so they can edit it down instead of starting from a blank box.
+ */
+const RULES_TEMPLATE: Dict = {
+  uz: "<p><strong>Qoidalar:</strong> har bir savolga belgilangan vaqt ichida javob bering.</p><ul><li>To'g'ri javob — 1 ball</li><li>Vaqtida javob bermaslik — 0 ball</li><li>Eng ko'p ball to'plagan jamoa g'olib bo'ladi</li></ul>",
+  ru: "<p><strong>Правила:</strong> отвечайте на каждый вопрос в отведённое время.</p><ul><li>Правильный ответ — 1 балл</li><li>Нет ответа вовремя — 0 баллов</li><li>Побеждает команда с наибольшим количеством баллов</li></ul>",
+  en: "<p><strong>Rules:</strong> answer each question within the given time.</p><ul><li>Correct answer — 1 point</li><li>No answer in time — 0 points</li><li>The team with the most points wins</li></ul>",
+};
+
+export function rulesTemplateHtml(language: Language): string {
+  return RULES_TEMPLATE[language] ?? RULES_TEMPLATE.uz;
 }
 
 // --- Editor picklists (question types, reveal modes, collage styles) -------

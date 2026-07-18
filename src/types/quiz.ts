@@ -167,11 +167,23 @@ export interface MultiImageQuestion extends QuestionBase {
 export interface MusicQuestion extends QuestionBase {
   type: "music";
   mediaId: string | null;
+  /** Seconds into the clip where playback should begin (e.g. to skip a
+   * silent intro on a guess-the-song clip) — a lightweight playback offset,
+   * not a destructive edit of the file itself. Falls back to 0. */
+  startAt?: number;
 }
+
+/** How the video fills its frame during presentation: "contain" keeps the
+ * whole picture visible inside a bordered player (default, safe for any
+ * aspect ratio); "cover" fills the entire screen edge-to-edge, cropping
+ * whatever doesn't fit — for when the presenter wants full-screen impact. */
+export type VideoDisplaySize = "contain" | "cover";
 
 export interface VideoQuestion extends QuestionBase {
   type: "video";
   mediaId: string | null;
+  /** Falls back to "contain" when absent (older questions). */
+  displaySize?: VideoDisplaySize;
 }
 
 export type Question =
@@ -208,6 +220,8 @@ export interface QuestionPatch {
   mediaIds?: string[];
   revealStyle?: CollageRevealStyle;
   backgroundImageId?: string | null;
+  displaySize?: VideoDisplaySize;
+  startAt?: number;
 }
 
 /** Text sizing tiers used throughout Presentation Mode. */
@@ -254,8 +268,13 @@ export interface Stage {
 export interface Quiz {
   id: string;
   title: string;
-  /** Short organizational note about the quiz — not shown to the audience. */
-  description?: string;
+  /**
+   * Rich, multi-language intro text shown on the presenter's start screen
+   * before the show begins — the natural place for a brief explanation of
+   * the rules and how scoring works. Same free-form model as every other
+   * text field: 1-3 language variants, real formatting (bold/lists/etc).
+   */
+  description?: LocalizedText;
   stages: Stage[];
   defaultLanguage: Language;
   createdAt: number;

@@ -338,7 +338,7 @@ export async function installDemoQuiz(): Promise<string> {
   const quiz: Quiz = {
     id: uid(),
     title: "Kino Zakovati",
-    description: "Tayyor namuna: 6 bosqichdan iborat kino mavzusidagi to'liq zakovat.",
+    description: lt("Tayyor namuna: 6 bosqichdan iborat kino mavzusidagi to'liq zakovat."),
     defaultLanguage: "uz",
     stages: [stage1, stage2, stage3, stage4, stage5, stage6],
     createdAt: now,

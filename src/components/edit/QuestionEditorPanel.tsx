@@ -16,7 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useQuizStore } from "@/lib/store";
-import { uid } from "@/lib/utils";
+import { uid, formatTime } from "@/lib/utils";
 import { useMediaUrl } from "@/lib/media";
 import {
   COLLAGE_REVEAL_STYLES,
@@ -139,6 +139,13 @@ export function QuestionEditorPanel({
             onPick={() => setMediaTarget("primary")}
             onClear={() => patch({ mediaId: null } as Partial<MusicQuestion>)}
           />
+          {(question as MusicQuestion).mediaId && (
+            <AudioStartPointField
+              mediaId={(question as MusicQuestion).mediaId}
+              startAt={(question as MusicQuestion).startAt ?? 0}
+              onChange={(startAt) => patch({ startAt } as Partial<MusicQuestion>)}
+            />
+          )}
         </EditorSection>
       )}
 
@@ -150,6 +157,31 @@ export function QuestionEditorPanel({
             onPick={() => setMediaTarget("primary")}
             onClear={() => patch({ mediaId: null } as Partial<VideoQuestion>)}
           />
+          <p className="mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
+            {t("videoDisplaySizeLabel")}
+          </p>
+          <div className="flex gap-1.5">
+            {(["contain", "cover"] as const).map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => patch({ displaySize: size } as Partial<VideoQuestion>)}
+                className={cn(
+                  "flex-1 rounded-lg border px-3 py-2 text-left transition-colors",
+                  ((question as VideoQuestion).displaySize ?? "contain") === size
+                    ? "border-accent/60 bg-accent/10"
+                    : "border-border bg-surface-2 hover:bg-foreground/5"
+                )}
+              >
+                <div className="text-xs font-medium">
+                  {size === "contain" ? t("videoSizeContain") : t("videoSizeCover")}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {size === "contain" ? t("videoSizeContainHint") : t("videoSizeCoverHint")}
+                </div>
+              </button>
+            ))}
+          </div>
         </EditorSection>
       )}
 
@@ -519,6 +551,58 @@ function MultiImageEditor({
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A lightweight playback-start offset for music questions — not a
+ * destructive trim of the file itself, just where the player begins each
+ * time the slide loads (e.g. skipping a few silent seconds before the
+ * actual clue starts). Duration is read from a hidden <audio> preview.
+ */
+function AudioStartPointField({
+  mediaId,
+  startAt,
+  onChange,
+}: {
+  mediaId: string | null | undefined;
+  startAt: number;
+  onChange: (startAt: number) => void;
+}) {
+  const url = useMediaUrl(mediaId);
+  const [duration, setDuration] = useState(0);
+  const t = useT();
+  const max = Math.max(duration - 1, 0);
+
+  return (
+    <div className="mt-3">
+      <p className="mb-1.5 text-xs font-medium text-muted-foreground">
+        {t("audioStartPointLabel")}
+      </p>
+      {url && (
+        <audio
+          src={url}
+          className="hidden"
+          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+        />
+      )}
+      <div className="flex items-center gap-2">
+        <input
+          type="range"
+          min={0}
+          max={max}
+          step={1}
+          value={Math.min(startAt, max)}
+          disabled={duration === 0}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="h-1.5 flex-1 accent-accent disabled:opacity-40"
+        />
+        <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+          {formatTime(Math.min(startAt, max))}
+        </span>
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground/70">{t("audioStartPointHint")}</p>
     </div>
   );
 }

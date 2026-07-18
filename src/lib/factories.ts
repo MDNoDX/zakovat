@@ -1,6 +1,8 @@
 import { uid } from "@/lib/utils";
 import {
   emptyLocalizedText,
+  isLocalizedTextEmpty,
+  type LocalizedText,
   type Question,
   type QuestionType,
   type Quiz,
@@ -66,12 +68,12 @@ export function createStage(index: number): Stage {
   };
 }
 
-export function createQuiz(title: string, description?: string): Quiz {
+export function createQuiz(title: string, description?: LocalizedText): Quiz {
   const now = Date.now();
   return {
     id: uid(),
     title: title || "Nomsiz Zakovat",
-    description: description?.trim() || undefined,
+    description: description && !isLocalizedTextEmpty(description) ? description : undefined,
     stages: [],
     defaultLanguage: "uz",
     createdAt: now,

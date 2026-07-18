@@ -3,9 +3,15 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Play, Pencil, Copy, Trash2, Layers } from "lucide-react";
-import type { Quiz } from "@/types/quiz";
+import { isLocalizedTextEmpty, resolveText, type Quiz } from "@/types/quiz";
 import { useQuizStore } from "@/lib/store";
 import { useT, confirmDeleteQuizMessage, useUiLanguageStore } from "@/lib/i18n";
+
+/** Card preview needs a short, plain-text snippet — rich formatting (lists,
+ * headings) would look broken clamped to two lines in a small card. */
+function plainTextPreview(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
 
 export function QuizCard({ quiz }: { quiz: Quiz }) {
   const deleteQuiz = useQuizStore((s) => s.deleteQuiz);
@@ -13,6 +19,9 @@ export function QuizCard({ quiz }: { quiz: Quiz }) {
   const questionCount = quiz.stages.reduce((n, s) => n + s.questions.length, 0);
   const t = useT();
   const uiLanguage = useUiLanguageStore((s) => s.language);
+  const descriptionPreview = !isLocalizedTextEmpty(quiz.description)
+    ? plainTextPreview(resolveText(quiz.description, quiz.defaultLanguage))
+    : "";
 
   return (
     <motion.div
@@ -27,9 +36,9 @@ export function QuizCard({ quiz }: { quiz: Quiz }) {
           <Layers className="h-5 w-5" />
         </div>
         <h3 className="mb-1 truncate text-base font-semibold">{quiz.title}</h3>
-        {quiz.description && (
+        {descriptionPreview && (
           <p className="mb-1.5 line-clamp-2 text-xs text-muted-foreground/80">
-            {quiz.description}
+            {descriptionPreview}
           </p>
         )}
         <p className="text-xs text-muted-foreground">

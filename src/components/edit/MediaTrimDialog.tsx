@@ -21,10 +21,16 @@ export function MediaTrimDialog({
   item,
   open,
   onOpenChange,
+  onSaved,
 }: {
   item: MediaItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called with the newly-created trimmed clip right after it's saved to the
+   * library, so the caller can apply it directly to whatever field is
+   * currently being edited instead of leaving the user to hunt for the
+   * "(trim)" copy and re-select it by hand. */
+  onSaved?: (item: MediaItem) => void;
 }) {
   const url = useMediaUrl(item?.id);
   const addMedia = useQuizStore((s) => s.addMedia);
@@ -91,6 +97,7 @@ export function MediaTrimDialog({
         createdAt: Date.now(),
       };
       addMedia(newItem);
+      onSaved?.(newItem);
       onOpenChange(false);
     } catch {
       setError(true);

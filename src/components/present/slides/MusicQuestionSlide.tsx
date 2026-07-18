@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Music, Play, Pause, AudioLines, BarChart3 } from "lucide-react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
+import { Music, Play, Pause, Waves } from "lucide-react";
 import { useMediaUrl } from "@/lib/media";
 import { formatTime } from "@/lib/utils";
-import { useWaveformStyleStore } from "@/lib/use-waveform-style";
+import { useWaveformStyleStore, WAVEFORM_SHAPE_LABEL } from "@/lib/use-waveform-style";
 import { WaveformCanvas } from "@/components/present/WaveformCanvas";
 import type { MusicQuestion } from "@/types/quiz";
 
@@ -18,10 +18,12 @@ export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
   const [duration, setDuration] = useState(0);
   const waveformShape = useWaveformStyleStore((s) => s.shape);
   const toggleWaveformShape = useWaveformStyleStore((s) => s.toggle);
+  const startAt = question.startAt ?? 0;
 
   useEffect(() => {
     setPlaying(false);
-    setProgress(0);
+    setProgress(startAt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question.id]);
 
   function toggle() {
@@ -33,6 +35,16 @@ export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
       audio.play();
     }
     setPlaying(!playing);
+  }
+
+  // A configurable starting point (set in the editor) instead of always
+  // beginning at 0:00 — e.g. skipping a silent intro on a guess-the-song clip.
+  function handleLoadedMetadata(e: SyntheticEvent<HTMLAudioElement>) {
+    setDuration(e.currentTarget.duration);
+    if (startAt > 0 && startAt < e.currentTarget.duration) {
+      e.currentTarget.currentTime = startAt;
+      setProgress(startAt);
+    }
   }
 
   return (
@@ -50,7 +62,7 @@ export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
           ref={audioRef}
           src={url}
           onTimeUpdate={(e) => setProgress(e.currentTarget.currentTime)}
-          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+          onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => setPlaying(false)}
         />
       )}
@@ -78,14 +90,10 @@ export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
         </div>
         <button
           onClick={toggleWaveformShape}
-          title="Tolqin shakli"
+          title={`To'lqin shakli: ${WAVEFORM_SHAPE_LABEL[waveformShape]}`}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
         >
-          {waveformShape === "bars" ? (
-            <BarChart3 className="h-4 w-4" />
-          ) : (
-            <AudioLines className="h-4 w-4" />
-          )}
+          <Waves className="h-4 w-4" />
         </button>
       </div>
     </div>

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, HelpCircle, Play } from "lucide-react";
 import { useQuizStore } from "@/lib/store";
+import { isLocalizedTextEmpty, resolveText } from "@/types/quiz";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 import { PresentationShell } from "@/components/present/PresentationShell";
 import {
   Tooltip,
@@ -77,8 +79,13 @@ export default function PresentPage({ params }: { params: { quizId: string } }) 
             Zakovat
           </p>
           <h1 className="text-4xl font-bold tracking-tight">{quiz.title}</h1>
-          {quiz.description && (
-            <p className="mt-3 text-sm text-muted-foreground">{quiz.description}</p>
+          {!isLocalizedTextEmpty(quiz.description) && (
+            <div
+              className="editor-content prose prose-sm mx-auto mt-3 max-w-md text-muted-foreground"
+              dangerouslySetInnerHTML={{
+                __html: sanitizeHtml(resolveText(quiz.description, quiz.defaultLanguage)),
+              }}
+            />
           )}
           <p className="mt-3 text-sm text-muted-foreground/70">
             {quiz.stages.length} {t("stageWord")} &middot;{" "}
