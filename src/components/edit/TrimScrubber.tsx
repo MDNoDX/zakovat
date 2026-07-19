@@ -25,7 +25,10 @@ export function TrimScrubber({
   duration: number;
   start: number;
   end: number;
-  onChange: (start: number, end: number) => void;
+  /** `which` tells the caller which edge just moved, so it can seek its own
+   * preview player to that exact spot as the handle is dragged — the whole
+   * point of a trim scrubber is seeing/hearing exactly where a cut lands. */
+  onChange: (start: number, end: number, which: "start" | "end") => void;
 }) {
   const [peaks, setPeaks] = useState<number[] | null>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -69,9 +72,9 @@ export function TrimScrubber({
     if (!which) return;
     const t = timeAt(e.clientX);
     if (which === "start") {
-      onChange(Math.min(t, end - MIN_SPAN), end);
+      onChange(Math.min(t, end - MIN_SPAN), end, "start");
     } else {
-      onChange(start, Math.max(t, start + MIN_SPAN));
+      onChange(start, Math.max(t, start + MIN_SPAN), "end");
     }
   }
 

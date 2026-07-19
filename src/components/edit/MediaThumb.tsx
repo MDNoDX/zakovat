@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Music, Video, Play, Pause } from "lucide-react";
 import { useMediaUrl } from "@/lib/media";
 import type { MediaItem } from "@/types/quiz";
+import { pauseOthersAndTrack, untrack } from "@/lib/media-preview-coordinator";
 import { cn } from "@/lib/utils";
 
 export function MediaThumb({
@@ -30,9 +31,17 @@ export function MediaThumb({
     if (playing) {
       el.pause();
     } else {
+      // Only one preview should ever be audible at once — stop whatever
+      // else was playing (anywhere in the editor) before starting this one.
+      pauseOthersAndTrack(el);
       el.currentTime = 0;
       el.play();
     }
+  }
+
+  function handleStopped(el: HTMLMediaElement) {
+    setPlaying(false);
+    untrack(el);
   }
 
   if (item.kind === "audio") {
@@ -51,8 +60,8 @@ export function MediaThumb({
               src={url}
               className="hidden"
               onPlay={() => setPlaying(true)}
-              onPause={() => setPlaying(false)}
-              onEnded={() => setPlaying(false)}
+              onPause={(e) => handleStopped(e.currentTarget)}
+              onEnded={(e) => handleStopped(e.currentTarget)}
             />
             <button
               type="button"
@@ -77,8 +86,8 @@ export function MediaThumb({
             className="h-full w-full object-cover"
             muted={!playing}
             onPlay={() => setPlaying(true)}
-            onPause={() => setPlaying(false)}
-            onEnded={() => setPlaying(false)}
+            onPause={(e) => handleStopped(e.currentTarget)}
+            onEnded={(e) => handleStopped(e.currentTarget)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-muted-foreground">

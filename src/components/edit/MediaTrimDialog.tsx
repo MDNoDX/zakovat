@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState, type SyntheticEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import { uid } from "@/lib/utils";
 import type { MediaItem } from "@/types/quiz";
 import { useT } from "@/lib/i18n";
 import { TrimScrubber } from "@/components/edit/TrimScrubber";
+import { pauseOthersAndTrack, untrack } from "@/lib/media-preview-coordinator";
 
 export function MediaTrimDialog({
   item,
@@ -47,6 +48,8 @@ export function MediaTrimDialog({
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(false);
   const supported = isTrimSupported();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     setStart(0);
@@ -78,6 +81,25 @@ export function MediaTrimDialog({
   function handlePreviewPlay(e: SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) {
     const el = e.currentTarget;
     if (el.currentTime < start || el.currentTime >= end) el.currentTime = start;
+    pauseOthersAndTrack(el);
+  }
+
+  function handlePreviewStopped(e: SyntheticEvent<HTMLVideoElement | HTMLAudioElement>) {
+    untrack(e.currentTarget);
+  }
+
+  // Dragging a handle should feel like scrubbing a real trimmer: the
+  // preview jumps live to wherever the handle currently is (paused, so it
+  // doesn't keep running past what you're looking at) — not just update a
+  // number that you only see reflected once you separately press play.
+  function handleScrubberChange(s: number, e: number, which: "start" | "end") {
+    setStart(s);
+    setEnd(e);
+    const el = item?.kind === "video" ? videoRef.current : audioRef.current;
+    if (el) {
+      el.pause();
+      el.currentTime = which === "start" ? s : e;
+    }
   }
 
   async function handleSave() {
@@ -127,22 +149,28 @@ export function MediaTrimDialog({
           <div className="flex flex-col gap-4">
             {url && item.kind === "video" && (
               <video
+                ref={videoRef}
                 src={url}
                 controls
                 className="w-full rounded-xl border border-border bg-black"
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handlePreviewTimeUpdate}
                 onPlay={handlePreviewPlay}
+                onPause={handlePreviewStopped}
+                onEnded={handlePreviewStopped}
               />
             )}
             {url && item.kind === "audio" && (
               <audio
+                ref={audioRef}
                 src={url}
                 controls
                 className="w-full"
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handlePreviewTimeUpdate}
                 onPlay={handlePreviewPlay}
+                onPause={handlePreviewStopped}
+                onEnded={handlePreviewStopped}
               />
             )}
 
@@ -151,10 +179,7 @@ export function MediaTrimDialog({
               duration={duration}
               start={start}
               end={end}
-              onChange={(s, e) => {
-                setStart(s);
-                setEnd(e);
-              }}
+              onChange={handleScrubberChange}
             />
 
             {item.kind === "video" && forceAudioOnly && (
