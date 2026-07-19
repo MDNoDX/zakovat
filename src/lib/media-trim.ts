@@ -1,28 +1,36 @@
 "use client";
 
 // In-browser media trimming (and video -> audio-only extraction) with zero
-// new dependencies: no ffmpeg.wasm, no server round-trip. It plays the
-// source off-screen between `start` and `end` and re-encodes it with
-// MediaRecorder.
+// new dependencies: no ffmpeg.wasm, no server round-trip.
 //
-// Two separate capture paths are used on purpose, never mixed on the same
-// element:
-//  - Audio-only output (source is audio, or "extract audio only" from a
-//    video) goes through the Web Audio API alone: MediaElementSource ->
-//    MediaStreamDestination, which is never connected to speakers, so
-//    processing is silent. This is the common case and the one worth
-//    keeping silent.
-//  - Video output (video kept) uses HTMLMediaElement.captureStream() alone,
-//    which hands back synchronized video+audio tracks from one place.
-//    Mixing this with a separate Web Audio graph on the very same element
-//    was the source of unreliable output (audio tracks going silent or out
-//    of sync) — so for this path the clip does play audibly while it's
-//    being processed, which is an acceptable trade-off for a less common
-//    case.
+// Two fundamentally different strategies are used, picked by output kind:
 //
-// The output length is controlled with a precise setTimeout instead of
-// polling `timeupdate` (which only fires a few times a second and made the
-// old version overshoot / cut off early).
+//  - Audio output (source is audio, or "extract audio only" from a video)
+//    goes through `AudioContext.decodeAudioData()`, which decodes the
+//    *entire* clip in one shot — not in real time, just as fast as the CPU
+//    can decode it (typically well under a second, even for a multi-minute
+//    source). The requested [start, end] range is sliced directly out of
+//    the decoded PCM samples and written out as a WAV file by hand (a WAV
+//    header is ~20 lines of DataView writes — no encoder library needed).
+//    This is the fast path and covers the overwhelming majority of trims
+//    in a quiz app built around music questions and audio answers.
+//
+//  - Video output (the picture is kept) still has to go through realtime
+//    playback + `HTMLMediaElement.captureStream()` + `MediaRecorder`. This
+//    is a hard limitation of what the browser exposes without a bundled
+//    demuxer/encoder (WebCodecs alone isn't enough — turning a raw video
+//    frame stream back into a valid file needs a muxer, and correctly
+//    reading an arbitrary uploaded MP4/WebM's frames out of order needs a
+//    demuxer; both are substantial third-party libraries this project
+//    doesn't have network access to fetch and can't safely hand-roll
+//    without being able to test video files locally). Speeding up capture
+//    by raising `playbackRate` was considered and rejected: MediaRecorder
+//    timestamps frames by real wall-clock arrival, so a faster
+//    `playbackRate` bakes a permanently sped-up tempo into the output
+//    instead of just processing quicker — not a shortcut, a different
+//    (wrong) result. So this path stays real-time; it already avoids any
+//    wasted time before `start`, and uses a precise timer instead of
+//    polling to stop exactly at `end`.
 
 export interface TrimOptions {
   /** Start time, in seconds. */
@@ -38,16 +46,26 @@ type CaptureStreamElement = HTMLMediaElement & {
   mozCaptureStream?: () => MediaStream;
 };
 
+function getAudioContextCtor(): typeof AudioContext | null {
+  const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+  return w.AudioContext ?? w.webkitAudioContext ?? null;
+}
+
+/** Whether *any* trim path is available — audio (decodeAudioData) is the
+ * common, far more broadly supported case, so this stays true as long as
+ * that works even if the realtime video-capture path's prerequisites are
+ * missing (that combination shows up as a per-attempt error instead, only
+ * for the rarer "keep the video picture" case). */
 export function isTrimSupported(): boolean {
+  if (typeof window === "undefined") return false;
+  return getAudioContextCtor() !== null;
+}
+
+function isVideoCaptureSupported(): boolean {
   if (typeof window === "undefined") return false;
   if (typeof MediaRecorder === "undefined") return false;
   const probe = document.createElement("video") as CaptureStreamElement;
   return typeof probe.captureStream === "function" || typeof probe.mozCaptureStream === "function";
-}
-
-function getAudioContextCtor(): typeof AudioContext | null {
-  const w = window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
-  return w.AudioContext ?? w.webkitAudioContext ?? null;
 }
 
 function captureStreamOf(el: CaptureStreamElement): MediaStream {
@@ -85,28 +103,104 @@ export class TrimError extends Error {
   }
 }
 
-/**
- * Trims (and optionally strips the video from) a media blob, returning a
- * new Blob for the requested [start, end] range. Must be called from a
- * user-gesture context (a click handler), since the audio-only path opens
- * an AudioContext.
- */
-export function trimMedia(
-  sourceUrl: string,
-  sourceKind: "video" | "audio",
-  { start, end, audioOnly }: TrimOptions
-): Promise<Blob> {
+/** Writes a 16-bit PCM WAV file by hand from decoded channel data — the
+ * whole "encoder" is just this header plus the interleaved samples, which
+ * is what makes the fast audio path possible without any library. */
+function encodeWav(channelData: Float32Array[], sampleRate: number): Blob {
+  const numChannels = Math.max(channelData.length, 1);
+  const numFrames = channelData[0]?.length ?? 0;
+  const bytesPerSample = 2;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = numFrames * blockAlign;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  function writeString(offset: number, str: string) {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  }
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true); // PCM fmt chunk size
+  view.setUint16(20, 1, true); // format = PCM
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true); // byte rate
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, 16, true); // bits per sample
+  writeString(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  let offset = 44;
+  for (let i = 0; i < numFrames; i++) {
+    for (let c = 0; c < numChannels; c++) {
+      const clamped = Math.max(-1, Math.min(1, channelData[c][i] ?? 0));
+      view.setInt16(offset, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+      offset += 2;
+    }
+  }
+
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+/** The fast path: decode the whole source once (not in real time), slice
+ * the requested range straight out of the resulting samples, done. */
+async function trimAudioFast(sourceUrl: string, start: number, end: number): Promise<Blob> {
+  const AudioCtx = getAudioContextCtor();
+  if (!AudioCtx) throw new TrimError("TRIM_UNSUPPORTED");
+
+  let arrayBuffer: ArrayBuffer;
+  try {
+    const res = await fetch(sourceUrl);
+    arrayBuffer = await res.arrayBuffer();
+  } catch {
+    throw new TrimError("SOURCE_LOAD_FAILED");
+  }
+
+  const ctx = new AudioCtx();
+  let audioBuffer: AudioBuffer;
+  try {
+    audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  } catch {
+    await ctx.close().catch(() => {});
+    throw new TrimError("SOURCE_LOAD_FAILED");
+  }
+  await ctx.close().catch(() => {});
+
+  const sampleRate = audioBuffer.sampleRate;
+  const clampedEnd = Math.min(end, audioBuffer.duration);
+  if (!(clampedEnd > start)) throw new TrimError("INVALID_RANGE");
+
+  const startSample = Math.max(0, Math.floor(start * sampleRate));
+  const endSample = Math.min(audioBuffer.length, Math.floor(clampedEnd * sampleRate));
+  if (endSample <= startSample) throw new TrimError("INVALID_RANGE");
+
+  const channelData: Float32Array[] = [];
+  for (let c = 0; c < audioBuffer.numberOfChannels; c++) {
+    channelData.push(audioBuffer.getChannelData(c).subarray(startSample, endSample));
+  }
+
+  const blob = encodeWav(channelData, sampleRate);
+  if (blob.size === 0) throw new TrimError("EMPTY_OUTPUT");
+  return blob;
+}
+
+/** The realtime path — unavoidable for keeping the video picture, see the
+ * file-level comment above for why. Only ever reached when the source is a
+ * video and its picture is being kept (audio-only output, from either an
+ * audio or video source, always takes the fast decode-and-slice path
+ * instead). Plays the source off-screen between `start` and `end` and
+ * re-encodes it with MediaRecorder. */
+function trimVideoRealtime(sourceUrl: string, { start, end }: { start: number; end: number }): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    if (!isTrimSupported()) {
+    if (!isVideoCaptureSupported()) {
       reject(new TrimError("TRIM_UNSUPPORTED"));
       return;
     }
 
-    const outputIsVideo = sourceKind === "video" && !audioOnly;
-
-    const el = document.createElement(
-      sourceKind === "video" ? "video" : "audio"
-    ) as CaptureStreamElement;
+    const el = document.createElement("video") as CaptureStreamElement;
     el.src = sourceUrl;
     el.preload = "auto";
     el.style.position = "fixed";
@@ -116,7 +210,6 @@ export function trimMedia(
     el.style.height = "1px";
     document.body.appendChild(el);
 
-    let audioCtx: AudioContext | null = null;
     let stopTimer: ReturnType<typeof setTimeout> | null = null;
     let settled = false;
 
@@ -124,7 +217,6 @@ export function trimMedia(
       if (stopTimer) clearTimeout(stopTimer);
       el.pause();
       el.remove();
-      audioCtx?.close().catch(() => {});
     };
 
     const fail = (err: TrimError) => {
@@ -157,36 +249,14 @@ export function trimMedia(
 
       el.onseeked = () => {
         let finalStream: MediaStream;
-
-        if (outputIsVideo) {
-          try {
-            finalStream = captureStreamOf(el);
-          } catch {
-            fail(new TrimError("CAPTURE_FAILED"));
-            return;
-          }
-        } else {
-          const AudioCtx = getAudioContextCtor();
-          if (!AudioCtx) {
-            fail(new TrimError("CAPTURE_FAILED"));
-            return;
-          }
-          try {
-            audioCtx = new AudioCtx();
-            const source = audioCtx.createMediaElementSource(el);
-            const dest = audioCtx.createMediaStreamDestination();
-            source.connect(dest);
-            // Deliberately not connected to audioCtx.destination — this is
-            // what keeps the trim silent instead of playing out loud.
-            finalStream = dest.stream;
-          } catch {
-            fail(new TrimError("CAPTURE_FAILED"));
-            return;
-          }
+        try {
+          finalStream = captureStreamOf(el);
+        } catch {
+          fail(new TrimError("CAPTURE_FAILED"));
+          return;
         }
 
-        const outputKind: "video" | "audio" = outputIsVideo ? "video" : "audio";
-        const mimeType = pickMimeType(outputKind);
+        const mimeType = pickMimeType("video");
         const chunks: BlobPart[] = [];
         let recorder: MediaRecorder;
         try {
@@ -222,4 +292,23 @@ export function trimMedia(
       };
     };
   });
+}
+
+/**
+ * Trims (and optionally strips the video from) a media blob, returning a
+ * new Blob for the requested [start, end] range. Picks the fast
+ * decode-and-slice path whenever the output is audio-only (the common
+ * case), and only falls back to realtime capture when the video picture
+ * itself needs to be kept.
+ */
+export function trimMedia(
+  sourceUrl: string,
+  sourceKind: "video" | "audio",
+  { start, end, audioOnly }: TrimOptions
+): Promise<Blob> {
+  const outputIsVideo = sourceKind === "video" && !audioOnly;
+  if (!outputIsVideo) {
+    return trimAudioFast(sourceUrl, start, end);
+  }
+  return trimVideoRealtime(sourceUrl, { start, end });
 }

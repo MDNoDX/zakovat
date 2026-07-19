@@ -52,7 +52,7 @@ export function MediaThumb({
           className
         )}
       >
-        <Music className="h-6 w-6" />
+        {!(previewable && url) && <Music className="h-6 w-6" />}
         {previewable && url && (
           <>
             <audio
@@ -63,12 +63,17 @@ export function MediaThumb({
               onPause={(e) => handleStopped(e.currentTarget)}
               onEnded={(e) => handleStopped(e.currentTarget)}
             />
+            {/* Only the small circle itself intercepts the click (and stops
+             * it from reaching the grid cell's onClick) — everywhere else on
+             * the tile still bubbles up and selects it like before. A
+             * preview button that covered the whole tile silently broke
+             * picking audio/video items entirely. */}
             <button
               type="button"
               onClick={togglePlay}
-              className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-opacity hover:bg-black/40 hover:opacity-100"
+              className="relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white transition-transform hover:scale-110 hover:bg-black/80"
             >
-              {playing ? <Pause className="h-6 w-6 text-white" /> : <Play className="h-6 w-6 text-white" />}
+              {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
             </button>
           </>
         )}
@@ -96,13 +101,17 @@ export function MediaThumb({
         )}
         <Video className="absolute bottom-1 right-1 h-4 w-4 text-white drop-shadow" />
         {previewable && url && (
-          <button
-            type="button"
-            onClick={togglePlay}
-            className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-opacity hover:bg-black/30 hover:opacity-100"
-          >
-            {playing ? <Pause className="h-6 w-6 text-white" /> : <Play className="h-6 w-6 text-white" />}
-          </button>
+          // Same "only the circle is clickable" fix as the audio case above —
+          // an inset-0 button here silently blocked picking video items too.
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={togglePlay}
+              className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-all hover:scale-110 hover:bg-black/80 group-hover:opacity-100"
+            >
+              {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
+            </button>
+          </div>
         )}
       </div>
     );
