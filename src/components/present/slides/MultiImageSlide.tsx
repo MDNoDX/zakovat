@@ -42,7 +42,7 @@ export function MultiImageSlide({
   );
 }
 
-function Collage({
+export function Collage({
   mediaIds,
   count,
   revealCount,

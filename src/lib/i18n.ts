@@ -287,6 +287,11 @@ export const UI_STRINGS = {
     ru: "Размер текста вопроса",
     en: "Question text size",
   },
+  promptSizeToolbarHint: {
+    uz: "Yozuv qutisidagi S/M/L/XL tugmalari butun matn hajmini belgilaydi — barcha tillarda bir xil bo'lib qoladi",
+    ru: "Кнопки S/M/L/XL в панели инструментов задают размер всего текста — одинаково на всех языках",
+    en: "The S/M/L/XL buttons in the toolbar set the whole text's size — kept identical across every language",
+  },
   mediaSectionLabel: { uz: "Media", ru: "Медиа", en: "Media" },
   mediaDisplaySizeLabel: {
     uz: "Ekranda ko'rinishi",
@@ -384,6 +389,26 @@ export const UI_STRINGS = {
     ru: "Показывается как полноэкранный фон за текстом вопроса во время презентации",
     en: "Shown as a full-screen background behind the question text during presentation",
   },
+  quizBackgroundLabel: {
+    uz: "Zakovat foni (ixtiyoriy)",
+    ru: "Фон зековата (необязательно)",
+    en: "Quiz background (optional)",
+  },
+  quizBackgroundHint: {
+    uz: "Alohida fon belgilanmagan har bir savolda shu rasm ko'rsatiladi",
+    ru: "Показывается на любом вопросе, где не задан свой отдельный фон",
+    en: "Shown on any question that doesn't set its own background",
+  },
+  waveformStyleLabel: {
+    uz: "To'lqin shakli",
+    ru: "Форма волны",
+    en: "Waveform style",
+  },
+  waveformStyleHint: {
+    uz: "Musiqali savollarda audio pleer shu ko'rinishda chiqadi",
+    ru: "В таком виде будет отображаться аудиоплеер в музыкальных вопросах",
+    en: "How the audio player looks on music questions",
+  },
   timerLabel: { uz: "Vaqt hisoblagich", ru: "Таймер", en: "Timer" },
   timerOff: { uz: "O'chirilgan", ru: "Выключен", en: "Off" },
   answerSlideLabel: { uz: "Javob slaydi", ru: "Слайд ответа", en: "Answer slide" },
@@ -408,6 +433,11 @@ export const UI_STRINGS = {
     uz: "Media qo'shish (ixtiyoriy)",
     ru: "Добавить медиа (необязательно)",
     en: "Add media (optional)",
+  },
+  addAnswerCollage: {
+    uz: "Kollaj qo'shish",
+    ru: "Добавить коллаж",
+    en: "Add collage",
   },
   replaceMedia: { uz: "Almashtirish", ru: "Заменить", en: "Replace" },
   chooseFile: { uz: "Fayl tanlash", ru: "Выбрать файл", en: "Choose file" },

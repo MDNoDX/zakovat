@@ -10,6 +10,7 @@ import { WaveformCanvas } from "@/components/present/WaveformCanvas";
 import { MediaCaption, useMediaCaption } from "@/components/present/MediaCaption";
 import { isLocalizedTextEmpty, type Question, type Language } from "@/types/quiz";
 import { MultipleChoiceSlide } from "@/components/present/slides/MultipleChoiceSlide";
+import { Collage } from "@/components/present/slides/MultiImageSlide";
 import { MultiLangText } from "@/components/present/MultiLangText";
 import { tFor } from "@/lib/i18n";
 
@@ -69,6 +70,11 @@ function GenericAnswer({
   const hasExplanation = !isLocalizedTextEmpty(question.answer.explanation);
   const primaryLanguage = languages[0] ?? "uz";
   const isCover = question.answer.mediaDisplaySize === "cover" && (mediaKind === "image" || mediaKind === "video");
+  const collageIds = question.answer.mediaIds ?? [];
+  const hasCollage = collageIds.length > 0;
+  // Media of any kind IS the answer when there's no separate text for it —
+  // only say "no answer provided" when there's truly nothing to show.
+  const hasAnyMedia = hasCollage || !!url;
 
   const textContent = (
     <>
@@ -83,7 +89,7 @@ function GenericAnswer({
           size="hero"
           weight="font-bold"
         />
-      ) : (
+      ) : hasAnyMedia ? null : (
         <p className="text-2xl text-muted-foreground">{tFor("answerNotProvided", primaryLanguage)}</p>
       )}
     </>
@@ -107,6 +113,20 @@ function GenericAnswer({
       )}
     </>
   );
+
+  if (hasCollage) {
+    // A collage answer stands in for the single mediaId slot entirely —
+    // shown fully revealed at once, same tile layouts as a collage question.
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-16 py-8 text-center">
+        {textContent}
+        <div className="h-[50vh] w-full max-w-4xl">
+          <Collage mediaIds={collageIds} count={collageIds.length} revealCount={collageIds.length} />
+        </div>
+        {explanationContent}
+      </div>
+    );
+  }
 
   if (isCover) {
     // Full-bleed media behind everything, with the answer text/explanation

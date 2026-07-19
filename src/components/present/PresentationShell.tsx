@@ -226,9 +226,11 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   const timerSeconds =
     slide.kind === "question" ? slide.question.timerSeconds : null;
 
+  // A question's own background always wins; the quiz-level one is just a
+  // fallback so a whole show can share one look without setting it per question.
   const backgroundImageId =
     slide.kind === "question" || slide.kind === "answer" || slide.kind === "recap"
-      ? slide.question.backgroundImageId
+      ? slide.question.backgroundImageId ?? quiz.backgroundImageId ?? null
       : null;
 
   return (

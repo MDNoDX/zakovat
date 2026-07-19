@@ -37,20 +37,31 @@ export function MultiLangText({
   languages,
   size = "large",
   layout = "stack",
+  separator = " / ",
   align = "center",
   className,
   proseClassName,
   weight = "font-semibold",
+  stripFontSize = false,
 }: {
   text: LocalizedText | undefined;
   languages: Language[];
   size?: PromptSize;
-  layout?: "stack" | "inline";
+  layout?: "stack" | "inline" | "joined";
+  /** Only used by the "joined" layout — every available language's text on
+   * one flowing line, separated by this (e.g. multiple-choice options,
+   * where a full stacked flag/label treatment per option would crowd out
+   * the actual answer text on a projector). */
+  separator?: string;
   /** Only affects the "stack" layout — inline (MC options etc.) is always left-led. */
   align?: "left" | "center" | "right";
   className?: string;
   proseClassName?: string;
   weight?: string;
+  /** Strips any inline font-size a language variant's rich text may carry,
+   * so this field's size is controlled solely by `size` above — uniform
+   * across every language, unaffected by old per-run formatting marks. */
+  stripFontSize?: boolean;
 }) {
   // Sanitizing is a real DOM-parse, not a free string op — memoized by the
   // `text` array reference so re-renders that don't touch this content
@@ -59,11 +70,11 @@ export function MultiLangText({
   const sanitizedByLang = useMemo(() => {
     const map: Partial<Record<Language, string>> = {};
     for (const variant of text ?? []) {
-      map[variant.language] = sanitizeHtml(variant.content);
+      map[variant.language] = sanitizeHtml(variant.content, { stripFontSize });
     }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text]);
+  }, [text, stripFontSize]);
 
   const used = usedLanguages(text);
   const toShow = languages.filter((l) => used.includes(l));
@@ -74,6 +85,28 @@ export function MultiLangText({
   const showLabels = finalLangs.length > 1;
   const alignItems = align === "left" ? "items-start" : align === "right" ? "items-end" : "items-center";
   const textAlignClass = align === "left" ? "text-left" : align === "right" ? "text-right" : "text-center";
+
+  if (layout === "joined") {
+    return (
+      <div
+        className={cn(
+          "flex flex-wrap items-baseline gap-x-2",
+          textAlignClass,
+          className
+        )}
+      >
+        {finalLangs.map((lang, i) => (
+          <span key={lang} className="flex items-baseline gap-2">
+            {i > 0 && <span className="text-muted-foreground/40">{separator}</span>}
+            <span
+              className={cn("editor-content prose", weight, SIZE_CLASS[size], proseClassName)}
+              dangerouslySetInnerHTML={{ __html: sanitizedByLang[lang] ?? "" }}
+            />
+          </span>
+        ))}
+      </div>
+    );
+  }
 
   if (layout === "inline") {
     return (

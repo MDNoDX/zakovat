@@ -117,6 +117,13 @@ export interface Answer {
   /** Falls back to "contain" when absent. Only meaningful when the answer
    * media is an image or video. */
   mediaDisplaySize?: MediaDisplaySize;
+  /** An alternative to the single `mediaId` slot: a collage of several
+   * images revealed together as the answer (e.g. "here's the whole set").
+   * When this has entries it takes over from `mediaId` for what's shown. */
+  mediaIds?: string[];
+  /** Reuses the same reveal styles as multi-image questions; only relevant
+   * when `mediaIds` is in use. Falls back to "all-at-once". */
+  collageRevealStyle?: CollageRevealStyle;
 }
 
 interface QuestionBase {
@@ -301,6 +308,11 @@ export interface Quiz {
    * text field: 1-3 language variants, real formatting (bold/lists/etc).
    */
   description?: LocalizedText;
+  /** Fallback full-bleed background photo used by every question/answer
+   * slide that doesn't set its own `backgroundImageId` — a quick way to
+   * give a whole show a consistent look without setting it question by
+   * question. A question's own background always wins when both are set. */
+  backgroundImageId?: string | null;
   stages: Stage[];
   defaultLanguage: Language;
   createdAt: number;

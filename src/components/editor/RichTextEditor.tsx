@@ -22,7 +22,8 @@ import {
 } from "lucide-react";
 import { FontSize } from "@/lib/tiptap-font-size";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useT, promptSizeLabel, useUiLanguageStore } from "@/lib/i18n";
+import { PROMPT_SIZES, type PromptSize } from "@/types/quiz";
 
 interface RichTextEditorProps {
   value: string;
@@ -30,6 +31,18 @@ interface RichTextEditorProps {
   placeholder?: string;
   className?: string;
   minimal?: boolean;
+  /**
+   * Swaps the toolbar's S/M/L/XL size buttons from their normal per-selection
+   * behavior (a Tiptap mark on just the highlighted text — great for the
+   * odd emphasized word, but easy to apply inconsistently across languages)
+   * into a single whole-field tier control: clicking sets one size for the
+   * entire field via `onSizeChange`, and whichever tier is currently active
+   * is highlighted. Used for the question prompt, where one consistent size
+   * matters far more than per-run styling, and text length must never
+   * affect the rendered size.
+   */
+  sizeValue?: PromptSize;
+  onSizeChange?: (size: PromptSize) => void;
 }
 
 const FONT_SIZES = [
@@ -39,6 +52,13 @@ const FONT_SIZES = [
   { label: "XL", value: "1.9em" },
 ];
 
+const SIZE_TIER_LABEL: Record<PromptSize, string> = {
+  small: "S",
+  medium: "M",
+  large: "L",
+  hero: "XL",
+};
+
 const SWATCHES = ["#F8FAFC", "#3B82F6", "#F87171", "#FBBF24", "#34D399", "#A78BFA"];
 
 export function RichTextEditor({
@@ -47,6 +67,8 @@ export function RichTextEditor({
   placeholder,
   className,
   minimal,
+  sizeValue,
+  onSizeChange,
 }: RichTextEditorProps) {
   const editor = useEditor({
     immediatelyRender: false,
@@ -89,6 +111,7 @@ export function RichTextEditor({
   }, [value, editor]);
 
   const t = useT();
+  const uiLanguage = useUiLanguageStore((s) => s.language);
 
   if (!editor) return null;
 
@@ -171,16 +194,38 @@ export function RichTextEditor({
             <Divider />
             <div className="flex items-center gap-0.5 px-0.5">
               <Type className="h-3.5 w-3.5 text-muted-foreground" />
-              {FONT_SIZES.map((f) => (
-                <button
-                  key={f.value}
-                  type="button"
-                  onClick={() => editor.chain().focus().setFontSize(f.value).run()}
-                  className="rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
-                >
-                  {f.label}
-                </button>
-              ))}
+              {sizeValue !== undefined && onSizeChange ? (
+                // Whole-field tier mode: one size for the entire text, always
+                // visibly reflecting what's currently active — no per-run
+                // marks to accidentally leave inconsistent across languages.
+                PROMPT_SIZES.map((tier) => (
+                  <button
+                    key={tier}
+                    type="button"
+                    title={promptSizeLabel(tier, uiLanguage)}
+                    onClick={() => onSizeChange(tier)}
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors",
+                      sizeValue === tier
+                        ? "bg-accent/15 text-accent"
+                        : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+                    )}
+                  >
+                    {SIZE_TIER_LABEL[tier]}
+                  </button>
+                ))
+              ) : (
+                FONT_SIZES.map((f) => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => editor.chain().focus().setFontSize(f.value).run()}
+                    className="rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+                  >
+                    {f.label}
+                  </button>
+                ))
+              )}
             </div>
             <Divider />
             <div className="flex items-center gap-1 px-1">

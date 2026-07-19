@@ -55,14 +55,14 @@ export function MultipleChoiceSlide({
         />
       )}
       {url && (mediaKind === "image" || mediaKind === "video") && <MediaCaption text={caption} />}
-      <div className="grid w-full max-w-4xl grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid w-full max-w-5xl grid-cols-1 gap-4 md:grid-cols-2">
         {question.options.map((opt, i) => {
           const isCorrect = revealed && question.correctOptionId === opt.id;
           return (
             <div
               key={opt.id}
               className={cn(
-                "relative flex items-center gap-4 overflow-hidden rounded-2xl border px-6 py-5 text-left transition-all duration-500",
+                "relative flex items-center gap-4 overflow-hidden rounded-2xl border px-6 py-6 text-left transition-all duration-500",
                 isCorrect
                   ? "border-emerald-400/60 bg-emerald-400/10 shadow-[0_0_40px_-8px_rgba(52,211,153,0.5)]"
                   : "border-white/10 bg-white/5"
@@ -102,9 +102,9 @@ export function MultipleChoiceSlide({
               <MultiLangText
                 text={opt.text}
                 languages={languages}
-                size="small"
-                layout="inline"
-                weight="font-medium"
+                size="medium"
+                layout="joined"
+                weight="font-semibold"
                 className="flex-1"
               />
             </div>

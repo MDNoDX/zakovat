@@ -27,7 +27,7 @@ interface QuizStore {
   duplicateQuiz: (quizId: string) => string | undefined;
   updateQuiz: (
     quizId: string,
-    patch: Partial<Pick<Quiz, "title" | "description" | "defaultLanguage">>
+    patch: Partial<Pick<Quiz, "title" | "description" | "defaultLanguage" | "backgroundImageId">>
   ) => void;
   getQuiz: (quizId: string) => Quiz | undefined;
 

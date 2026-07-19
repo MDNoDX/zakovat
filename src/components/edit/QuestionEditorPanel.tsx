@@ -24,7 +24,6 @@ import { useMediaUrl } from "@/lib/media";
 import {
   COLLAGE_REVEAL_STYLES,
   emptyLocalizedText,
-  PROMPT_SIZES,
   TIMER_OPTIONS,
   type CollageRevealStyle,
   type McAnswerRevealMode,
@@ -45,14 +44,7 @@ import { MediaThumb } from "@/components/edit/MediaThumb";
 import { cn } from "@/lib/utils";
 import { useT, questionTypeLabel, collageRevealLabel, collageRevealDescription, useUiLanguageStore } from "@/lib/i18n";
 
-type MediaTarget = null | "primary" | "answer" | "multi-add" | "background";
-
-const SIZE_LABEL_KEY: Record<PromptSize, "sizeSmall" | "sizeMedium" | "sizeLarge" | "sizeHero"> = {
-  small: "sizeSmall",
-  medium: "sizeMedium",
-  large: "sizeLarge",
-  hero: "sizeHero",
-};
+type MediaTarget = null | "primary" | "answer" | "multi-add" | "background" | "answer-collage-add";
 
 const DEFAULT_MC_OPTIONS = () => [
   { id: uid(), text: emptyLocalizedText() },
@@ -85,6 +77,7 @@ export function QuestionEditorPanel({
   const uiLanguage = useUiLanguageStore((s) => s.language);
 
   const supportsBackground = question.type !== "music";
+  const hasAnswerCollage = (question.answer.mediaIds?.length ?? 0) > 0;
 
   function patch(p: QuestionPatch) {
     updateQuestion(quizId, stageId, question.id, p);
@@ -177,18 +170,13 @@ export function QuestionEditorPanel({
         </div>
       </div>
 
-      <EditorSection icon={MessageSquare} title={t("questionTextLabel")}>
+      <EditorSection icon={MessageSquare} title={t("questionTextLabel")} hint={t("promptSizeToolbarHint")}>
         <LocalizedRichTextEditor
           value={question.prompt}
           placeholder={t("questionTextPlaceholder")}
           onChange={(prompt) => patch({ prompt })}
-        />
-        <p className="mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
-          {t("promptSizeLabel")}
-        </p>
-        <PromptSizePicker
-          value={question.promptSize ?? (currentMediaId || question.type === "multiple-choice" ? "medium" : "hero")}
-          onChange={(promptSize) => patch({ promptSize })}
+          sizeValue={question.promptSize ?? (currentMediaId || question.type === "multiple-choice" ? "medium" : "hero")}
+          onSizeChange={(promptSize) => patch({ promptSize })}
         />
       </EditorSection>
 
@@ -276,7 +264,8 @@ export function QuestionEditorPanel({
       {question.type === "multi-image" && (
         <EditorSection icon={Images} title={t("imagesLabel")}>
           <MultiImageEditor
-            question={question as MultiImageQuestion}
+            mediaIds={(question as MultiImageQuestion).mediaIds}
+            revealStyle={(question as MultiImageQuestion).revealStyle}
             onAdd={() => setMediaTarget("multi-add")}
             onChangeIds={(mediaIds) => patch({ mediaIds } as Partial<MultiImageQuestion>)}
             onChangeRevealStyle={(revealStyle) => patch({ revealStyle })}
@@ -340,7 +329,30 @@ export function QuestionEditorPanel({
             }
           />
           <div>
-            {question.answer.mediaId || showAnswerMediaField ? (
+            {hasAnswerCollage ? (
+              <>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-medium text-muted-foreground">{t("answerImageLabel")}</p>
+                  <button
+                    type="button"
+                    onClick={() => patch({ answer: { ...question.answer, mediaIds: [] } })}
+                    className="rounded p-1 text-muted-foreground hover:bg-red-500/10 hover:text-red-400"
+                    aria-label={t("delete")}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <MultiImageEditor
+                  mediaIds={question.answer.mediaIds ?? []}
+                  revealStyle={question.answer.collageRevealStyle ?? "all-at-once"}
+                  onAdd={() => setMediaTarget("answer-collage-add")}
+                  onChangeIds={(mediaIds) => patch({ answer: { ...question.answer, mediaIds } })}
+                  onChangeRevealStyle={(collageRevealStyle) =>
+                    patch({ answer: { ...question.answer, collageRevealStyle } })
+                  }
+                />
+              </>
+            ) : question.answer.mediaId || showAnswerMediaField ? (
               <>
                 <p className="mb-2 text-xs font-medium text-muted-foreground">
                   {t("answerImageLabel")}
@@ -368,16 +380,25 @@ export function QuestionEditorPanel({
                 )}
               </>
             ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAnswerMediaField(true);
-                  setMediaTarget("answer");
-                }}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <Plus className="h-3 w-3" /> {t("addAnswerMedia")}
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAnswerMediaField(true);
+                    setMediaTarget("answer");
+                  }}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Plus className="h-3 w-3" /> {t("addAnswerMedia")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMediaTarget("answer-collage-add")}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Images className="h-3 w-3" /> {t("addAnswerCollage")}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -391,7 +412,7 @@ export function QuestionEditorPanel({
             ? ["image", "video", "audio"]
             : "image"
         }
-        multiple={mediaTarget === "multi-add"}
+        multiple={mediaTarget === "multi-add" || mediaTarget === "answer-collage-add"}
         onSelect={(ids) => {
           if (mediaTarget === "primary") {
             applyPrimaryMedia(ids[0] ?? null);
@@ -402,6 +423,9 @@ export function QuestionEditorPanel({
           } else if (mediaTarget === "multi-add" && question.type === "multi-image") {
             const existing = (question as MultiImageQuestion).mediaIds;
             patch({ mediaIds: [...existing, ...ids] } as Partial<MultiImageQuestion>);
+          } else if (mediaTarget === "answer-collage-add") {
+            const existing = question.answer.mediaIds ?? [];
+            patch({ answer: { ...question.answer, mediaIds: [...existing, ...ids] } });
           }
         }}
       />
@@ -601,35 +625,6 @@ function SingleMediaField({
   );
 }
 
-function PromptSizePicker({
-  value,
-  onChange,
-}: {
-  value: PromptSize;
-  onChange: (size: PromptSize) => void;
-}) {
-  const t = useT();
-  return (
-    <div className="flex gap-1.5">
-      {PROMPT_SIZES.map((size) => (
-        <button
-          key={size}
-          type="button"
-          onClick={() => onChange(size)}
-          className={cn(
-            "rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
-            value === size
-              ? "border-accent/60 bg-accent/10 text-foreground"
-              : "border-border bg-surface-2 text-muted-foreground hover:bg-foreground/5"
-          )}
-        >
-          {t(SIZE_LABEL_KEY[size])}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function DisplaySizePicker({
   label,
   value,
@@ -707,12 +702,14 @@ function AnswerRevealModePicker({
 }
 
 function MultiImageEditor({
-  question,
+  mediaIds,
+  revealStyle,
   onAdd,
   onChangeIds,
   onChangeRevealStyle,
 }: {
-  question: MultiImageQuestion;
+  mediaIds: string[];
+  revealStyle: CollageRevealStyle;
   onAdd: () => void;
   onChangeIds: (ids: string[]) => void;
   onChangeRevealStyle: (style: CollageRevealStyle) => void;
@@ -722,7 +719,7 @@ function MultiImageEditor({
   const uiLanguage = useUiLanguageStore((s) => s.language);
 
   function removeAt(index: number) {
-    const next = question.mediaIds.slice();
+    const next = mediaIds.slice();
     next.splice(index, 1);
     onChangeIds(next);
   }
@@ -730,16 +727,16 @@ function MultiImageEditor({
   return (
     <div>
       <p className="mb-2 text-[11px] text-muted-foreground/70">
-        {question.mediaIds.length} {t("collageImagesInfoSuffix")}
+        {mediaIds.length} {t("collageImagesInfoSuffix")}
       </p>
       <div className="grid grid-cols-4 gap-2">
-        {question.mediaIds.map((id, i) => {
+        {mediaIds.map((id, i) => {
           const item = media.find((m) => m.id === id);
           if (!item) return null;
           return (
             <div key={id} className="group relative aspect-square overflow-hidden rounded-lg">
               <MediaThumb item={item} className="h-full w-full" />
-              {question.revealStyle === "sequential" && (
+              {revealStyle === "sequential" && (
                 <span className="absolute left-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[10px] font-bold text-white">
                   {i + 1}
                 </span>
@@ -762,7 +759,7 @@ function MultiImageEditor({
         </button>
       </div>
 
-      {question.mediaIds.length > 1 && (
+      {mediaIds.length > 1 && (
         <div className="mt-3 flex gap-1.5">
           {COLLAGE_REVEAL_STYLES.map((style) => (
             <button
@@ -770,7 +767,7 @@ function MultiImageEditor({
               onClick={() => onChangeRevealStyle(style.value)}
               className={cn(
                 "flex-1 rounded-lg border px-3 py-2 text-left transition-colors",
-                question.revealStyle === style.value
+                revealStyle === style.value
                   ? "border-accent/60 bg-accent/10"
                   : "border-border bg-surface-2 hover:bg-foreground/5"
               )}

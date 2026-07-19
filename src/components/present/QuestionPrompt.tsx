@@ -14,5 +14,14 @@ export function QuestionPrompt({
   size?: PromptSize;
   className?: string;
 }) {
-  return <MultiLangText text={prompt} languages={languages} size={size} className={className} layout="stack" />;
+  return (
+    <MultiLangText
+      text={prompt}
+      languages={languages}
+      size={size}
+      className={className}
+      layout="stack"
+      stripFontSize
+    />
+  );
 }

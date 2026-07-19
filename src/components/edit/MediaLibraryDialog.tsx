@@ -162,7 +162,7 @@ export function MediaLibraryDialog({
                   isPicked ? "border-accent" : "border-transparent hover:border-border"
                 )}
               >
-                <MediaThumb item={item} className="h-full w-full" />
+                <MediaThumb item={item} className="h-full w-full" previewable />
                 {isPicked && (
                   <div className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-white">
                     <Check className="h-3 w-3" />

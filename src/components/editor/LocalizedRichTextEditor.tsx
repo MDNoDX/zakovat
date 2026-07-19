@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, X } from "lucide-react";
-import { LANGUAGES, type Language, type LocalizedText } from "@/types/quiz";
+import { LANGUAGES, type Language, type LocalizedText, type PromptSize } from "@/types/quiz";
 import { RichTextEditor } from "@/components/editor/RichTextEditor";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -12,6 +12,11 @@ interface LocalizedRichTextEditorProps {
   onChange: (next: LocalizedText) => void;
   placeholder?: string;
   minimal?: boolean;
+  /** Passed straight through to every language row's RichTextEditor — see
+   * its own doc comment. Applying the exact same tier to every row is what
+   * keeps a field's size uniform across languages. */
+  sizeValue?: PromptSize;
+  onSizeChange?: (size: PromptSize) => void;
 }
 
 /**
@@ -26,6 +31,8 @@ export function LocalizedRichTextEditor({
   onChange,
   placeholder,
   minimal,
+  sizeValue,
+  onSizeChange,
 }: LocalizedRichTextEditorProps) {
   const variants = value.length > 0 ? value : [{ language: "uz" as Language, content: "" }];
   const canAddMore = variants.length < LANGUAGES.length;
@@ -94,6 +101,8 @@ export function LocalizedRichTextEditor({
               onChange={(html) => setContentAt(i, html)}
               placeholder={placeholder}
               minimal={minimal}
+              sizeValue={sizeValue}
+              onSizeChange={onSizeChange}
             />
           </div>
         ))}

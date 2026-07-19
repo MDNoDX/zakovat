@@ -21,7 +21,7 @@ const GLOBAL_SAFE_STYLE_PROPS: Record<string, RegExp> = {
 
 const SAFE_URL = /^(https?:|mailto:)/i;
 
-function sanitizeStyleValue(style: string): string {
+function sanitizeStyleValue(style: string, stripFontSize: boolean): string {
   return style
     .split(";")
     .map((decl) => decl.trim())
@@ -30,6 +30,7 @@ function sanitizeStyleValue(style: string): string {
       const idx = decl.indexOf(":");
       if (idx === -1) return null;
       const prop = decl.slice(0, idx).trim().toLowerCase();
+      if (stripFontSize && prop === "font-size") return null;
       const value = decl.slice(idx + 1).trim();
       const pattern = GLOBAL_SAFE_STYLE_PROPS[prop];
       if (!pattern || !pattern.test(value)) return null;
@@ -39,7 +40,7 @@ function sanitizeStyleValue(style: string): string {
     .join("; ");
 }
 
-function sanitizeElement(el: Element) {
+function sanitizeElement(el: Element, stripFontSize: boolean) {
   const tag = el.tagName;
 
   if (!ALLOWED_TAGS.has(tag)) {
@@ -66,7 +67,7 @@ function sanitizeElement(el: Element) {
       continue;
     }
     if (name === "style") {
-      const cleaned = sanitizeStyleValue(attr.value);
+      const cleaned = sanitizeStyleValue(attr.value, stripFontSize);
       if (cleaned) el.setAttribute("style", cleaned);
       else el.removeAttribute("style");
       continue;
@@ -81,11 +82,20 @@ function sanitizeElement(el: Element) {
 
   // Recurse into children (copy to array first since unwrapping mutates the tree).
   for (const child of Array.from(el.children)) {
-    sanitizeElement(child);
+    sanitizeElement(child, stripFontSize);
   }
 }
 
-export function sanitizeHtml(html: string | null | undefined): string {
+export function sanitizeHtml(
+  html: string | null | undefined,
+  options?: {
+    /** Strips any inline font-size the rich text editor may have embedded
+     * per-run in older content. Used for audience-facing "one size fits the
+     * whole field" text (the question prompt, MC options) so a stray old
+     * mark can never fight the field's own size tier again. */
+    stripFontSize?: boolean;
+  }
+): string {
   if (!html) return "";
   if (typeof window === "undefined" || typeof document === "undefined") {
     // Server-side render pass (shouldn't normally happen for these
@@ -95,7 +105,7 @@ export function sanitizeHtml(html: string | null | undefined): string {
   const template = document.createElement("template");
   template.innerHTML = html;
   for (const child of Array.from(template.content.children)) {
-    sanitizeElement(child);
+    sanitizeElement(child, !!options?.stripFontSize);
   }
   return template.innerHTML;
 }
