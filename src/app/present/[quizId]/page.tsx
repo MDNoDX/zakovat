@@ -74,20 +74,20 @@ export default function PresentPage({ params }: { params: { quizId: string } }) 
           </TooltipContent>
         </Tooltip>
 
-        <div className="max-w-lg text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.4em] text-accent">
+        <div className="max-w-2xl text-center">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.5em] text-accent">
             Zakovat
           </p>
-          <h1 className="text-4xl font-bold tracking-tight">{quiz.title}</h1>
+          <h1 className="text-6xl font-bold tracking-tight md:text-7xl">{quiz.title}</h1>
           {!isLocalizedTextEmpty(quiz.description) && (
             <div
-              className="editor-content prose prose-sm mx-auto mt-3 max-w-md text-muted-foreground"
+              className="editor-content prose prose-lg mx-auto mt-5 max-w-xl text-foreground/80"
               dangerouslySetInnerHTML={{
                 __html: sanitizeHtml(resolveText(quiz.description, quiz.defaultLanguage)),
               }}
             />
           )}
-          <p className="mt-3 text-sm text-muted-foreground/70">
+          <p className="mt-4 text-base text-muted-foreground/70">
             {quiz.stages.length} {t("stageWord")} &middot;{" "}
             {quiz.stages.reduce((n, s) => n + s.questions.length, 0)} {t("questionWord")}
           </p>
@@ -98,9 +98,9 @@ export default function PresentPage({ params }: { params: { quizId: string } }) 
             sound.unlock();
             setStarted(true);
           }}
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white shadow-soft transition-transform hover:scale-105 active:scale-95"
+          className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-white shadow-soft transition-transform hover:scale-105 active:scale-95"
         >
-          <Play className="ml-1 h-7 w-7" />
+          <Play className="ml-1 h-8 w-8" />
         </button>
       </div>
     );

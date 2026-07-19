@@ -382,7 +382,7 @@ function SlideRenderer({
               />
             );
           case "music":
-            return <MusicQuestionSlide question={question} />;
+            return <MusicQuestionSlide question={question} languages={languages} />;
           case "video":
             return <VideoQuestionSlide question={question} languages={languages} />;
         }
@@ -430,7 +430,7 @@ function SlideRenderer({
               />
             );
           case "music":
-            return <MusicQuestionSlide question={question} />;
+            return <MusicQuestionSlide question={question} languages={languages} />;
           case "video":
             return <VideoQuestionSlide question={question} languages={languages} />;
         }

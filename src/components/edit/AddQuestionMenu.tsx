@@ -129,7 +129,7 @@ export function AddQuestionMenu({
             <p className="mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
               {t("quickAddTypeLabel")}
             </p>
-            <div className="flex flex-wrap gap-1">
+            <div className="grid grid-cols-2 gap-1">
               {ORDER.map((opt) => {
                 const Icon = TYPE_ICON[opt];
                 const active = type === opt;
@@ -137,18 +137,19 @@ export function AddQuestionMenu({
                   <button
                     key={opt}
                     type="button"
-                    title={questionTypeLabel(opt, uiLanguage)}
-                    aria-label={questionTypeLabel(opt, uiLanguage)}
                     aria-pressed={active}
                     onClick={() => setType(opt)}
                     className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition-colors",
+                      "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-left transition-colors",
                       active
                         ? "border-accent/60 bg-accent/15 text-accent"
                         : "border-border text-muted-foreground hover:bg-foreground/5"
                     )}
                   >
-                    <Icon className="h-3.5 w-3.5" />
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate text-[11px] font-medium">
+                      {questionTypeLabel(opt, uiLanguage)}
+                    </span>
                   </button>
                 );
               })}

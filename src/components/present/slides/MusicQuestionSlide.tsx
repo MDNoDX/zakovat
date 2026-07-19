@@ -6,11 +6,16 @@ import { useMediaUrl } from "@/lib/media";
 import { formatTime } from "@/lib/utils";
 import { useWaveformStyleStore, WAVEFORM_SHAPE_LABEL } from "@/lib/use-waveform-style";
 import { WaveformCanvas } from "@/components/present/WaveformCanvas";
-import type { MusicQuestion } from "@/types/quiz";
+import { isLocalizedTextEmpty, type Language, type MusicQuestion } from "@/types/quiz";
+import { QuestionPrompt } from "@/components/present/QuestionPrompt";
 
-// Per spec: music slides show only the music icon, progress bar, play/pause
-// and the timer — no question text, to keep the guessing element intact.
-export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
+export function MusicQuestionSlide({
+  question,
+  languages,
+}: {
+  question: MusicQuestion;
+  languages: Language[];
+}) {
   const url = useMediaUrl(question.mediaId);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -19,6 +24,7 @@ export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
   const waveformShape = useWaveformStyleStore((s) => s.shape);
   const toggleWaveformShape = useWaveformStyleStore((s) => s.toggle);
   const startAt = question.startAt ?? 0;
+  const hasPrompt = !isLocalizedTextEmpty(question.prompt);
 
   useEffect(() => {
     setPlaying(false);
@@ -48,13 +54,22 @@ export function MusicQuestionSlide({ question }: { question: MusicQuestion }) {
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-10 px-16">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-8 px-16">
+      {hasPrompt && (
+        <QuestionPrompt
+          prompt={question.prompt}
+          languages={languages}
+          size="medium"
+          className="max-w-3xl"
+        />
+      )}
+
       <div
-        className={`flex h-40 w-40 items-center justify-center rounded-full bg-accent/10 text-accent ${
-          playing ? "pulse-ring" : ""
-        }`}
+        className={`flex items-center justify-center rounded-full bg-accent/10 text-accent transition-all ${
+          hasPrompt ? "h-28 w-28" : "h-40 w-40"
+        } ${playing ? "pulse-ring" : ""}`}
       >
-        <Music className="h-16 w-16" />
+        <Music className={hasPrompt ? "h-11 w-11" : "h-16 w-16"} />
       </div>
 
       {url && (
