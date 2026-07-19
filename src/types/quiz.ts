@@ -139,10 +139,24 @@ export interface TextQuestion extends QuestionBase {
   type: "text";
 }
 
+/** How a multiple-choice question's correct answer gets revealed:
+ * "highlight" just marks the correct option in place among the others
+ * (the original behavior); "announce" instead shows the full standard
+ * answer treatment (big text, media, explanation) like every other
+ * question type — using the correct option's own text automatically if
+ * no separate answer text was written. Falls back to "highlight". */
+export type McAnswerRevealMode = "highlight" | "announce";
+
 export interface MultipleChoiceQuestion extends QuestionBase {
   type: "multiple-choice";
   options: MultipleChoiceOption[];
   correctOptionId: string | null;
+  /** Optional media shown alongside the options — same free-form slot as
+   * every other question type. */
+  mediaId?: string | null;
+  /** Falls back to "contain" when absent (only meaningful for image/video). */
+  displaySize?: MediaDisplaySize;
+  answerRevealMode?: McAnswerRevealMode;
 }
 
 export interface ImageQuestion extends QuestionBase {
@@ -233,6 +247,7 @@ export interface QuestionPatch {
   backgroundImageId?: string | null;
   displaySize?: MediaDisplaySize;
   startAt?: number;
+  answerRevealMode?: McAnswerRevealMode;
 }
 
 /** Text sizing tiers used throughout Presentation Mode. */

@@ -24,7 +24,7 @@ export function AnswerSlide({
   indexInStage: number;
   showExplanation: boolean;
 }) {
-  if (question.type === "multiple-choice") {
+  if (question.type === "multiple-choice" && question.answerRevealMode !== "announce") {
     return <MultipleChoiceSlide question={question} languages={languages} revealed />;
   }
 
@@ -54,7 +54,18 @@ function GenericAnswer({
     (s) => s.media.find((m) => m.id === question.answer.mediaId)?.kind
   );
   const mediaCaption = useMediaCaption(question.answer.mediaId);
-  const hasCorrect = !isLocalizedTextEmpty(question.answer.correctText);
+  // Multiple-choice questions in "announce" mode may never have had a
+  // separate answer text written — fall back to the correct option's own
+  // text so there's still something to announce.
+  const mcFallbackText =
+    question.type === "multiple-choice"
+      ? question.options.find((o) => o.id === question.correctOptionId)?.text
+      : undefined;
+  const correctText =
+    isLocalizedTextEmpty(question.answer.correctText) && mcFallbackText
+      ? mcFallbackText
+      : question.answer.correctText;
+  const hasCorrect = !isLocalizedTextEmpty(correctText);
   const hasExplanation = !isLocalizedTextEmpty(question.answer.explanation);
   const primaryLanguage = languages[0] ?? "uz";
   const isCover = question.answer.mediaDisplaySize === "cover" && (mediaKind === "image" || mediaKind === "video");
@@ -67,7 +78,7 @@ function GenericAnswer({
       </p>
       {hasCorrect ? (
         <MultiLangText
-          text={question.answer.correctText}
+          text={correctText}
           languages={languages}
           size="hero"
           weight="font-bold"

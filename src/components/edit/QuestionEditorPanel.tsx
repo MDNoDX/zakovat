@@ -27,6 +27,7 @@ import {
   PROMPT_SIZES,
   TIMER_OPTIONS,
   type CollageRevealStyle,
+  type McAnswerRevealMode,
   type MediaDisplaySize,
   type MediaItem,
   type MultiImageQuestion,
@@ -94,24 +95,46 @@ export function QuestionEditorPanel({
   // "text"/"image"/"music"/"video" are one continuous editing experience now:
   // a question always has text, and its one media slot freely becomes an
   // image/audio/video question depending on what gets attached — never a
-  // type chosen up front. Multiple-choice and collage stay structurally
-  // distinct (options array / multiple media items), so they're handled
-  // separately below.
+  // type chosen up front. Multiple-choice keeps its options but gets the
+  // same media slot alongside them (its type never changes when media is
+  // attached/cleared, unlike the others). Collage stays fully separate
+  // (an array of media, not one slot).
   const isUnifiedMediaQuestion =
-    question.type === "text" || question.type === "image" || question.type === "music" || question.type === "video";
+    question.type === "text" ||
+    question.type === "image" ||
+    question.type === "music" ||
+    question.type === "video" ||
+    question.type === "multiple-choice";
   const currentMediaKind: "image" | "audio" | "video" =
-    question.type === "music" ? "audio" : question.type === "video" ? "video" : "image";
+    question.type === "music"
+      ? "audio"
+      : question.type === "video"
+      ? "video"
+      : question.type === "multiple-choice"
+      ? media.find((m) => m.id === question.mediaId)?.kind ?? "image"
+      : "image";
   const currentMediaId =
-    question.type === "image" || question.type === "music" || question.type === "video"
+    question.type === "image" ||
+    question.type === "music" ||
+    question.type === "video" ||
+    question.type === "multiple-choice"
       ? question.mediaId
       : null;
   const currentDisplaySize: MediaDisplaySize =
-    (question.type === "image" || question.type === "video" ? question.displaySize : undefined) ?? "contain";
+    (question.type === "image" || question.type === "video" || question.type === "multiple-choice"
+      ? question.displaySize
+      : undefined) ?? "contain";
 
   /** Applies whatever the presenter just picked/trimmed for the primary
-   * media slot — the media's own kind (not a pre-chosen type) decides
-   * whether this becomes an image/audio/video question. */
+   * media slot. For multiple-choice, media is just an optional attachment
+   * alongside the options — the type never changes. For everything else,
+   * the media's own kind (not a pre-chosen type) decides whether this
+   * becomes an image/audio/video question. */
   function applyPrimaryMedia(id: string | null, kindHint?: "image" | "audio" | "video") {
+    if (question.type === "multiple-choice") {
+      patch({ mediaId: id });
+      return;
+    }
     if (id === null) {
       patch({ type: "text", mediaId: null, startAt: undefined, displaySize: undefined });
       return;
@@ -189,7 +212,7 @@ export function QuestionEditorPanel({
               onChange={(startAt) => patch({ startAt })}
             />
           )}
-          {(question.type === "image" || question.type === "video") && currentMediaId && (
+          {(currentMediaKind === "image" || currentMediaKind === "video") && currentMediaId && (
             <DisplaySizePicker
               label={t("mediaDisplaySizeLabel")}
               value={currentDisplaySize}
@@ -204,7 +227,18 @@ export function QuestionEditorPanel({
           {question.type === "multiple-choice" ? (
             <button
               type="button"
-              onClick={() => patch({ type: "text" })}
+              onClick={() => {
+                // Any media that was attached alongside the options carries
+                // over too — re-derived into the right image/audio/video
+                // question instead of just being silently orphaned.
+                if (question.mediaId) {
+                  const kind = media.find((m) => m.id === question.mediaId)?.kind ?? "image";
+                  const newType = kind === "audio" ? "music" : kind === "video" ? "video" : "image";
+                  patch({ type: newType, mediaId: question.mediaId });
+                } else {
+                  patch({ type: "text" });
+                }
+              }}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
             >
               <Type className="h-3 w-3" /> {t("removeMultipleChoice")}
@@ -213,9 +247,10 @@ export function QuestionEditorPanel({
             <button
               type="button"
               onClick={() =>
+                // Whatever media was already attached carries straight over —
+                // it just shows alongside the options now instead of alone.
                 patch({
                   type: "multiple-choice",
-                  mediaId: null,
                   options: DEFAULT_MC_OPTIONS(),
                   correctOptionId: null,
                 })
@@ -231,6 +266,10 @@ export function QuestionEditorPanel({
       {question.type === "multiple-choice" && (
         <EditorSection icon={Check} title={t("optionsLabel")} hint={t("optionsHint")}>
           <MultipleChoiceEditor question={question} onChange={(p) => patch(p)} />
+          <AnswerRevealModePicker
+            value={question.answerRevealMode ?? "highlight"}
+            onChange={(answerRevealMode) => patch({ answerRevealMode })}
+          />
         </EditorSection>
       )}
 
@@ -622,6 +661,43 @@ function DisplaySizePicker({
             </div>
             <div className="text-[10px] text-muted-foreground">
               {size === "contain" ? t("videoSizeContainHint") : t("videoSizeCoverHint")}
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnswerRevealModePicker({
+  value,
+  onChange,
+}: {
+  value: McAnswerRevealMode;
+  onChange: (mode: McAnswerRevealMode) => void;
+}) {
+  const t = useT();
+  return (
+    <div className="mt-3">
+      <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("answerRevealModeLabel")}</p>
+      <div className="flex gap-1.5">
+        {(["highlight", "announce"] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => onChange(mode)}
+            className={cn(
+              "flex-1 rounded-lg border px-3 py-2 text-left transition-colors",
+              value === mode
+                ? "border-accent/60 bg-accent/10"
+                : "border-border bg-surface-2 hover:bg-foreground/5"
+            )}
+          >
+            <div className="text-xs font-medium">
+              {mode === "highlight" ? t("revealModeHighlight") : t("revealModeAnnounce")}
+            </div>
+            <div className="text-[10px] text-muted-foreground">
+              {mode === "highlight" ? t("revealModeHighlightHint") : t("revealModeAnnounceHint")}
             </div>
           </button>
         ))}

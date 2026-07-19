@@ -309,6 +309,23 @@ export const UI_STRINGS = {
     ru: "Отметьте правильный ответ, нажав на кружок",
     en: "Mark the correct answer by clicking its circle",
   },
+  answerRevealModeLabel: {
+    uz: "Javob qanday e'lon qilinsin",
+    ru: "Как объявить ответ",
+    en: "How to reveal the answer",
+  },
+  revealModeHighlight: { uz: "Doirada belgilash", ru: "Отметить в списке", en: "Highlight in place" },
+  revealModeHighlightHint: {
+    uz: "To'g'ri variant shu ro'yxatda yashil rangda belgilanadi",
+    ru: "Правильный вариант просто подсвечивается зелёным в списке",
+    en: "The correct option is simply marked green within the list",
+  },
+  revealModeAnnounce: { uz: "Katta ekranda e'lon qilish", ru: "Объявить крупно", en: "Announce full-screen" },
+  revealModeAnnounceHint: {
+    uz: "To'g'ri javob boshqa savollar kabi katta matn bilan alohida ko'rsatiladi",
+    ru: "Правильный ответ показывается отдельно крупным текстом, как и в других вопросах",
+    en: "The correct answer gets its own big reveal, just like every other question type",
+  },
   markCorrectTitle: {
     uz: "To'g'ri javob sifatida belgilash",
     ru: "Отметить как правильный ответ",

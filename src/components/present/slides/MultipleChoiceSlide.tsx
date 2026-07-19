@@ -5,6 +5,9 @@ import { Check } from "lucide-react";
 import type { MultipleChoiceQuestion, Language } from "@/types/quiz";
 import { QuestionPrompt } from "@/components/present/QuestionPrompt";
 import { MultiLangText } from "@/components/present/MultiLangText";
+import { useMediaUrl } from "@/lib/media";
+import { useQuizStore } from "@/lib/store";
+import { MediaCaption, useMediaCaption } from "@/components/present/MediaCaption";
 import { cn } from "@/lib/utils";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
@@ -18,9 +21,40 @@ export function MultipleChoiceSlide({
   languages: Language[];
   revealed?: boolean;
 }) {
+  const url = useMediaUrl(question.mediaId);
+  const mediaKind = useQuizStore((s) => s.media.find((m) => m.id === question.mediaId)?.kind);
+  const caption = useMediaCaption(question.mediaId);
+  const isCover = question.displaySize === "cover" && (mediaKind === "image" || mediaKind === "video");
+
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-12 px-16">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-8 px-16">
       <QuestionPrompt prompt={question.prompt} languages={languages} size={question.promptSize ?? "medium"} />
+      {url && mediaKind === "audio" && (
+        <audio key={question.mediaId} src={url} controls className="w-full max-w-md" />
+      )}
+      {url && mediaKind === "video" && (
+        <video
+          key={question.mediaId}
+          src={url}
+          controls
+          className={cn(
+            "rounded-2xl border border-white/10 bg-black shadow-soft",
+            isCover ? "h-[38vh] w-full max-w-4xl object-cover" : "max-h-[35vh] w-full max-w-3xl"
+          )}
+        />
+      )}
+      {url && mediaKind === "image" && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt=""
+          className={cn(
+            "rounded-2xl border border-white/10",
+            isCover ? "h-[38vh] w-full max-w-4xl object-cover" : "max-h-[35vh] max-w-[60vw] object-contain"
+          )}
+        />
+      )}
+      {url && (mediaKind === "image" || mediaKind === "video") && <MediaCaption text={caption} />}
       <div className="grid w-full max-w-4xl grid-cols-1 gap-4 md:grid-cols-2">
         {question.options.map((opt, i) => {
           const isCorrect = revealed && question.correctOptionId === opt.id;
