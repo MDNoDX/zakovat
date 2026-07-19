@@ -103,16 +103,30 @@ export interface MultipleChoiceOption {
   text: LocalizedText;
 }
 
+/** How a piece of media fills its frame during presentation: "contain" keeps
+ * the whole picture visible inside a bordered player (safe for any aspect
+ * ratio); "cover" fills the entire screen edge-to-edge, cropping whatever
+ * doesn't fit — for full-screen impact. Applies to image and video media;
+ * audio has no visual frame to size (its waveform styling is separate). */
+export type MediaDisplaySize = "contain" | "cover";
+
 export interface Answer {
   correctText: LocalizedText;
   explanation?: LocalizedText;
   mediaId?: string | null;
+  /** Falls back to "contain" when absent. Only meaningful when the answer
+   * media is an image or video. */
+  mediaDisplaySize?: MediaDisplaySize;
 }
 
 interface QuestionBase {
   id: string;
   type: QuestionType;
   prompt: LocalizedText;
+  /** How large the question text itself renders. Falls back to each slide's
+   * own sensible default (e.g. "hero" for a plain text question, "medium"
+   * once media is sharing the screen with it) when absent. */
+  promptSize?: PromptSize;
   timerSeconds: TimerSeconds;
   answer: Answer;
   /** Optional full-bleed background photo shown behind the slide during presentation. */
@@ -134,6 +148,8 @@ export interface MultipleChoiceQuestion extends QuestionBase {
 export interface ImageQuestion extends QuestionBase {
   type: "image";
   mediaId: string | null;
+  /** Falls back to "contain" when absent (older questions). */
+  displaySize?: MediaDisplaySize;
 }
 
 export type CollageLayout = 2 | 3 | 4 | 6 | 9;
@@ -173,17 +189,11 @@ export interface MusicQuestion extends QuestionBase {
   startAt?: number;
 }
 
-/** How the video fills its frame during presentation: "contain" keeps the
- * whole picture visible inside a bordered player (default, safe for any
- * aspect ratio); "cover" fills the entire screen edge-to-edge, cropping
- * whatever doesn't fit — for when the presenter wants full-screen impact. */
-export type VideoDisplaySize = "contain" | "cover";
-
 export interface VideoQuestion extends QuestionBase {
   type: "video";
   mediaId: string | null;
   /** Falls back to "contain" when absent (older questions). */
-  displaySize?: VideoDisplaySize;
+  displaySize?: MediaDisplaySize;
 }
 
 export type Question =
@@ -210,6 +220,7 @@ export interface QuestionPatch {
   id?: string;
   type?: QuestionType;
   prompt?: LocalizedText;
+  promptSize?: PromptSize;
   timerSeconds?: TimerSeconds;
   answer?: Answer;
   createdAt?: number;
@@ -220,7 +231,7 @@ export interface QuestionPatch {
   mediaIds?: string[];
   revealStyle?: CollageRevealStyle;
   backgroundImageId?: string | null;
-  displaySize?: VideoDisplaySize;
+  displaySize?: MediaDisplaySize;
   startAt?: number;
 }
 

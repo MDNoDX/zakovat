@@ -20,7 +20,7 @@ export function MultipleChoiceSlide({
 }) {
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-12 px-16">
-      <QuestionPrompt prompt={question.prompt} languages={languages} size="medium" />
+      <QuestionPrompt prompt={question.prompt} languages={languages} size={question.promptSize ?? "medium"} />
       <div className="grid w-full max-w-4xl grid-cols-1 gap-4 md:grid-cols-2">
         {question.options.map((opt, i) => {
           const isCorrect = revealed && question.correctOptionId === opt.id;

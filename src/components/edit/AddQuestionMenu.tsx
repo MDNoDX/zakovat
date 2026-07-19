@@ -2,37 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import {
-  Type,
-  ListChecks,
-  Image as ImageIcon,
-  LayoutGrid,
-  Music,
-  Video,
-  Plus,
-} from "lucide-react";
+import { Type, LayoutGrid, Plus } from "lucide-react";
 import { emptyLocalizedText, isLocalizedTextEmpty, type LocalizedText, type QuestionType } from "@/types/quiz";
-import { questionTypeLabel, useUiLanguageStore, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import { LocalizedTextInput } from "@/components/editor/LocalizedTextInput";
 import { cn } from "@/lib/utils";
-
-const TYPE_ICON: Record<QuestionType, React.ElementType> = {
-  text: Type,
-  "multiple-choice": ListChecks,
-  image: ImageIcon,
-  "multi-image": LayoutGrid,
-  music: Music,
-  video: Video,
-};
-
-const ORDER: QuestionType[] = [
-  "text",
-  "multiple-choice",
-  "image",
-  "multi-image",
-  "music",
-  "video",
-];
 
 /**
  * Renders its dropdown through a portal into <body>, positioned by the
@@ -43,10 +17,11 @@ const ORDER: QuestionType[] = [
  * invisible). Rendering into <body> escapes that clipping entirely.
  *
  * The add flow leads with the question's actual text (and its language),
- * not an abstract type card — you type the question first, then pick what
- * kind of question it is. The type only decides which extra fields
- * (media/options/answer) show up next in the full editor; it never blocks
- * getting the words down first.
+ * not an abstract type card. There are only two real shapes left to choose
+ * between: a standard question (text, and its one media slot freely becomes
+ * image/audio/video/multiple-choice afterward in the full editor — never a
+ * type picked up front) or a collage (several images at once, structurally
+ * different so it still needs its own starting point).
  */
 export function AddQuestionMenu({
   onPick,
@@ -61,7 +36,6 @@ export function AddQuestionMenu({
   const [type, setType] = useState<QuestionType>("text");
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const uiLanguage = useUiLanguageStore((s) => s.language);
   const t = useT();
 
   function openMenu() {
@@ -126,19 +100,20 @@ export function AddQuestionMenu({
               onChange={setPrompt}
             />
 
-            <p className="mb-1.5 mt-3 text-xs font-medium text-muted-foreground">
-              {t("quickAddTypeLabel")}
-            </p>
-            <div className="grid grid-cols-2 gap-1">
-              {ORDER.map((opt) => {
-                const Icon = TYPE_ICON[opt];
-                const active = type === opt;
+            <div className="mt-3 grid grid-cols-2 gap-1">
+              {(
+                [
+                  { value: "text" as QuestionType, icon: Type, labelKey: "quickAddStandard" as const },
+                  { value: "multi-image" as QuestionType, icon: LayoutGrid, labelKey: "quickAddCollage" as const },
+                ]
+              ).map(({ value, icon: Icon, labelKey }) => {
+                const active = type === value;
                 return (
                   <button
-                    key={opt}
+                    key={value}
                     type="button"
                     aria-pressed={active}
-                    onClick={() => setType(opt)}
+                    onClick={() => setType(value)}
                     className={cn(
                       "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-left transition-colors",
                       active
@@ -147,9 +122,7 @@ export function AddQuestionMenu({
                     )}
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate text-[11px] font-medium">
-                      {questionTypeLabel(opt, uiLanguage)}
-                    </span>
+                    <span className="truncate text-[11px] font-medium">{t(labelKey)}</span>
                   </button>
                 );
               })}

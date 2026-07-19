@@ -12,7 +12,7 @@ export function TextQuestionSlide({
 }) {
   return (
     <div className="flex h-full w-full items-center justify-center px-16">
-      <QuestionPrompt prompt={question.prompt} languages={languages} />
+      <QuestionPrompt prompt={question.prompt} languages={languages} size={question.promptSize ?? "hero"} />
     </div>
   );
 }

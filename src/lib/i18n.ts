@@ -279,7 +279,30 @@ export const UI_STRINGS = {
     en: "Write the question here...",
   },
   quickAddTypeLabel: { uz: "Savol turi", ru: "Тип вопроса", en: "Question type" },
+  quickAddStandard: { uz: "Oddiy savol", ru: "Обычный вопрос", en: "Standard question" },
+  quickAddCollage: { uz: "Kollaj", ru: "Коллаж", en: "Collage" },
   quickAddSubmit: { uz: "Qo'shish", ru: "Добавить", en: "Add" },
+  promptSizeLabel: {
+    uz: "Savol matni hajmi",
+    ru: "Размер текста вопроса",
+    en: "Question text size",
+  },
+  mediaSectionLabel: { uz: "Media", ru: "Медиа", en: "Media" },
+  mediaDisplaySizeLabel: {
+    uz: "Ekranda ko'rinishi",
+    ru: "Отображение на экране",
+    en: "Screen display",
+  },
+  makeMultipleChoice: {
+    uz: "Variantli qilish",
+    ru: "Сделать с вариантами",
+    en: "Make multiple-choice",
+  },
+  removeMultipleChoice: {
+    uz: "Variantlarni olib tashlash",
+    ru: "Убрать варианты",
+    en: "Remove options",
+  },
   optionsLabel: { uz: "Variantlar", ru: "Варианты", en: "Options" },
   optionsHint: {
     uz: "To'g'ri javobni doiraga bosib belgilang",

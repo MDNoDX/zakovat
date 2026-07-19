@@ -59,7 +59,7 @@ export function MusicQuestionSlide({
         <QuestionPrompt
           prompt={question.prompt}
           languages={languages}
-          size="medium"
+          size={question.promptSize ?? "medium"}
           className="max-w-3xl"
         />
       )}

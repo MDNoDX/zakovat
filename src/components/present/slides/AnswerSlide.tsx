@@ -57,9 +57,10 @@ function GenericAnswer({
   const hasCorrect = !isLocalizedTextEmpty(question.answer.correctText);
   const hasExplanation = !isLocalizedTextEmpty(question.answer.explanation);
   const primaryLanguage = languages[0] ?? "uz";
+  const isCover = question.answer.mediaDisplaySize === "cover" && (mediaKind === "image" || mediaKind === "video");
 
-  return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-16 text-center">
+  const textContent = (
+    <>
       <p className="text-sm font-semibold uppercase tracking-[0.4em] text-accent">
         {indexInStage + 1}-{tFor("questionWord", primaryLanguage)} &middot;{" "}
         {tFor("correctAnswerLabel", primaryLanguage)}
@@ -74,26 +75,11 @@ function GenericAnswer({
       ) : (
         <p className="text-2xl text-muted-foreground">{tFor("answerNotProvided", primaryLanguage)}</p>
       )}
-      {url && mediaKind === "video" && (
-        <video
-          key={question.answer.mediaId}
-          src={url}
-          controls
-          className="max-h-[45vh] w-full max-w-3xl rounded-2xl border border-white/10 bg-black shadow-soft"
-        />
-      )}
-      {url && mediaKind === "audio" && (
-        <AnswerAudioPlayer key={question.answer.mediaId} url={url} />
-      )}
-      {url && (mediaKind === "image" || mediaKind === undefined) && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={url}
-          alt=""
-          className="max-h-[40vh] max-w-[60vw] rounded-2xl border border-white/10 object-contain"
-        />
-      )}
-      <MediaCaption text={mediaCaption} />
+    </>
+  );
+
+  const explanationContent = (
+    <>
       {hasExplanation && showExplanation && (
         <MultiLangText
           text={question.answer.explanation}
@@ -108,6 +94,57 @@ function GenericAnswer({
           {tFor("pressEForExplanation", primaryLanguage)}
         </p>
       )}
+    </>
+  );
+
+  if (isCover) {
+    // Full-bleed media behind everything, with the answer text/explanation
+    // overlaid on gradient scrims — mirrors the question-side "cover" slides
+    // for a consistent full-screen-impact option on the answer too.
+    return (
+      <div className="relative h-full w-full overflow-hidden bg-black">
+        {url && mediaKind === "video" && (
+          <video key={question.answer.mediaId} src={url} controls className="h-full w-full object-cover" />
+        )}
+        {url && mediaKind === "image" && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className="h-full w-full object-cover" />
+        )}
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-4 bg-gradient-to-b from-black/75 to-transparent px-16 pb-20 pt-8 text-center">
+          <div className="pointer-events-auto flex flex-col items-center gap-4">{textContent}</div>
+        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 bg-gradient-to-t from-black/75 to-transparent px-16 pb-6 pt-24 text-center">
+          <MediaCaption text={mediaCaption} />
+          <div className="pointer-events-auto">{explanationContent}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-16 text-center">
+      {textContent}
+      {url && mediaKind === "video" && (
+        <video
+          key={question.answer.mediaId}
+          src={url}
+          controls
+          className="max-h-[55vh] w-full max-w-4xl rounded-2xl border border-white/10 bg-black shadow-soft"
+        />
+      )}
+      {url && mediaKind === "audio" && (
+        <AnswerAudioPlayer key={question.answer.mediaId} url={url} />
+      )}
+      {url && (mediaKind === "image" || mediaKind === undefined) && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt=""
+          className="max-h-[55vh] max-w-[75vw] rounded-2xl border border-white/10 object-contain"
+        />
+      )}
+      <MediaCaption text={mediaCaption} />
+      {explanationContent}
     </div>
   );
 }

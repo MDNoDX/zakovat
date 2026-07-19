@@ -29,7 +29,7 @@ export function VideoQuestionSlide({
           <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center gap-3 bg-gradient-to-b from-black/70 to-transparent px-10 pb-16 pt-8">
             {hasPrompt && (
               <div className="pointer-events-auto">
-                <QuestionPrompt prompt={question.prompt} languages={languages} size="medium" />
+                <QuestionPrompt prompt={question.prompt} languages={languages} size={question.promptSize ?? "medium"} />
               </div>
             )}
           </div>
@@ -51,7 +51,7 @@ export function VideoQuestionSlide({
           key={question.id}
           src={url}
           controls
-          className="max-h-[70vh] w-full max-w-5xl rounded-2xl border border-white/10 bg-black shadow-soft"
+          className="max-h-[78vh] w-full max-w-6xl rounded-2xl border border-white/10 bg-black shadow-soft"
         />
       )}
       <MediaCaption text={caption} />
