@@ -72,6 +72,7 @@ export function QuestionEditorPanel({
 
   const mediaKindForTarget =
     question.type === "music" ? "audio" : question.type === "video" ? "video" : "image";
+  const isMusicPrimaryTarget = question.type === "music" && mediaTarget === "primary";
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-10 py-10">
@@ -132,7 +133,7 @@ export function QuestionEditorPanel({
       )}
 
       {question.type === "music" && (
-        <EditorSection icon={Music} title={t("audioFileLabel")}>
+        <EditorSection icon={Music} title={t("audioFileLabel")} hint={t("audioFromVideoHint")}>
           <SingleMediaField
             mediaId={(question as MusicQuestion).mediaId}
             kind="audio"
@@ -288,11 +289,19 @@ export function QuestionEditorPanel({
         onOpenChange={(o) => !o && setMediaTarget(null)}
         filterKind={
           mediaTarget === "primary"
-            ? mediaKindForTarget
+            ? isMusicPrimaryTarget
+              ? ["audio", "video"]
+              : mediaKindForTarget
             : mediaTarget === "answer"
             ? ["image", "video", "audio"]
             : "image"
         }
+        // A music question's clip must end up as audio — but the source is
+        // often a video (an interview clip, a movie scene). Rather than
+        // hiding videos from the picker, let the presenter pick one and
+        // route it straight through "extract audio only" trimming instead
+        // of ever attaching the raw video file as the question's media.
+        forceAudioExtraction={isMusicPrimaryTarget}
         multiple={mediaTarget === "multi-add"}
         onSelect={(ids) => {
           if (mediaTarget === "primary") {

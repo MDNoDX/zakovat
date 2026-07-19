@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useQuizStore } from "@/lib/store";
+import { Music } from "lucide-react";
 import { useMediaUrl, saveMediaBlob } from "@/lib/media";
 import { isTrimSupported, trimMedia } from "@/lib/media-trim";
 import { uid } from "@/lib/utils";
@@ -22,6 +23,7 @@ export function MediaTrimDialog({
   open,
   onOpenChange,
   onSaved,
+  forceAudioOnly,
 }: {
   item: MediaItem | null;
   open: boolean;
@@ -31,6 +33,9 @@ export function MediaTrimDialog({
    * currently being edited instead of leaving the user to hunt for the
    * "(trim)" copy and re-select it by hand. */
   onSaved?: (item: MediaItem) => void;
+  /** The calling field only accepts audio (e.g. a music question's clip) —
+   * "extract audio only" is locked on instead of being an optional checkbox. */
+  forceAudioOnly?: boolean;
 }) {
   const url = useMediaUrl(item?.id);
   const addMedia = useQuizStore((s) => s.addMedia);
@@ -47,10 +52,10 @@ export function MediaTrimDialog({
     setStart(0);
     setEnd(0);
     setDuration(0);
-    setAudioOnly(false);
+    setAudioOnly(!!forceAudioOnly);
     setError(false);
     setProcessing(false);
-  }, [item?.id, open]);
+  }, [item?.id, open, forceAudioOnly]);
 
   if (!item) return null;
 
@@ -152,7 +157,13 @@ export function MediaTrimDialog({
               }}
             />
 
-            {item.kind === "video" && (
+            {item.kind === "video" && forceAudioOnly && (
+              <p className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-2 text-xs text-foreground/80">
+                <Music className="h-3.5 w-3.5 shrink-0 text-accent" />
+                {t("audioOnlyForcedHint")}
+              </p>
+            )}
+            {item.kind === "video" && !forceAudioOnly && (
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <input
                   type="checkbox"

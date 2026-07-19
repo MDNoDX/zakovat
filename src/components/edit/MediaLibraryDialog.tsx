@@ -27,6 +27,12 @@ interface MediaLibraryDialogProps {
   /** Allow picking more than one item in a single session (used for multi-image questions). */
   multiple?: boolean;
   onSelect?: (mediaIds: string[]) => void;
+  /** The field being filled must end up as audio, but a video is an
+   * acceptable source (e.g. a music question's clip pulled from a movie
+   * scene). When true, any video the user clicks or uploads is routed
+   * through the trim dialog with "extract audio only" forced on, instead
+   * of ever being attached to the field as-is. */
+  forceAudioExtraction?: boolean;
 }
 
 export function MediaLibraryDialog({
@@ -35,6 +41,7 @@ export function MediaLibraryDialog({
   filterKind,
   multiple,
   onSelect,
+  forceAudioExtraction,
 }: MediaLibraryDialogProps) {
   const media = useQuizStore((s) => s.media);
   const addMedia = useQuizStore((s) => s.addMedia);
@@ -44,7 +51,13 @@ export function MediaLibraryDialog({
   const [picked, setPicked] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [trimTarget, setTrimTarget] = useState<MediaItem | null>(null);
+  const [lockAudioOnly, setLockAudioOnly] = useState(false);
   const t = useT();
+
+  function openExtractionTrim(item: MediaItem) {
+    setLockAudioOnly(true);
+    setTrimTarget(item);
+  }
 
   const allowedKinds = filterKind ? (Array.isArray(filterKind) ? filterKind : [filterKind]) : null;
   const items = allowedKinds ? media.filter((m) => allowedKinds.includes(m.kind)) : media;
@@ -78,17 +91,26 @@ export function MediaLibraryDialog({
         ...dims,
       };
       addMedia(item);
-      if (multiple) setPicked((p) => [...p, id]);
-      else setPicked([id]);
+      if (forceAudioExtraction && kind === "video") {
+        openExtractionTrim(item);
+      } else if (multiple) {
+        setPicked((p) => [...p, id]);
+      } else {
+        setPicked([id]);
+      }
     }
     setUploading(false);
   }
 
-  function togglePick(id: string) {
+  function togglePick(item: MediaItem) {
+    if (forceAudioExtraction && item.kind === "video") {
+      openExtractionTrim(item);
+      return;
+    }
     if (multiple) {
-      setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+      setPicked((p) => (p.includes(item.id) ? p.filter((x) => x !== item.id) : [...p, item.id]));
     } else {
-      setPicked([id]);
+      setPicked([item.id]);
     }
   }
 
@@ -134,7 +156,7 @@ export function MediaLibraryDialog({
             return (
               <div
                 key={item.id}
-                onClick={() => togglePick(item.id)}
+                onClick={() => togglePick(item)}
                 className={cn(
                   "group relative aspect-square cursor-pointer overflow-hidden rounded-lg border-2 transition-all",
                   isPicked ? "border-accent" : "border-transparent hover:border-border"
@@ -177,6 +199,7 @@ export function MediaLibraryDialog({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        setLockAudioOnly(!!forceAudioExtraction && item.kind === "video");
                         setTrimTarget(item);
                       }}
                       aria-label={t("trimMedia")}
@@ -190,6 +213,11 @@ export function MediaLibraryDialog({
                 {item.caption && (
                   <div className="absolute inset-x-0 bottom-0 truncate bg-black/70 px-1.5 py-1 text-[10px] text-white">
                     {item.caption}
+                  </div>
+                )}
+                {forceAudioExtraction && item.kind === "video" && !item.caption && (
+                  <div className="absolute inset-x-0 bottom-0 flex items-center gap-1 truncate bg-black/70 px-1.5 py-1 text-[10px] text-white">
+                    <Scissors className="h-2.5 w-2.5 shrink-0" /> {t("audioOnlyBadge")}
                   </div>
                 )}
               </div>
@@ -210,7 +238,13 @@ export function MediaLibraryDialog({
       <MediaTrimDialog
         item={trimTarget}
         open={trimTarget !== null}
-        onOpenChange={(o) => !o && setTrimTarget(null)}
+        forceAudioOnly={lockAudioOnly}
+        onOpenChange={(o) => {
+          if (!o) {
+            setTrimTarget(null);
+            setLockAudioOnly(false);
+          }
+        }}
         onSaved={(newItem) => {
           // If this library session is picking media for a specific field
           // (onSelect exists), the trimmed clip IS what the user wants

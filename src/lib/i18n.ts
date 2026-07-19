@@ -294,6 +294,17 @@ export const UI_STRINGS = {
   addOption: { uz: "Variant qo'shish", ru: "Добавить вариант", en: "Add option" },
   imageLabel: { uz: "Rasm", ru: "Изображение", en: "Image" },
   audioFileLabel: { uz: "Audio fayl", ru: "Аудиофайл", en: "Audio file" },
+  audioFromVideoHint: {
+    uz: "Video ham tanlashingiz mumkin — undan faqat audiosi ajratib olinadi",
+    ru: "Можно выбрать и видео — из него будет извлечён только звук",
+    en: "You can also pick a video — only its audio will be extracted",
+  },
+  audioOnlyBadge: { uz: "Audiosi olinadi", ru: "Будет извлечён звук", en: "Audio will be extracted" },
+  audioOnlyForcedHint: {
+    uz: "Bu savolga faqat audio biriktiriladi — videoning shu qismidagi audiosi ajratib olinadi",
+    ru: "К этому вопросу прикрепится только аудио — будет извлечён звук из этого фрагмента видео",
+    en: "Only audio will be attached to this question — the sound from this part of the video will be extracted",
+  },
   audioStartPointLabel: {
     uz: "Boshlanish nuqtasi",
     ru: "Точка начала",
