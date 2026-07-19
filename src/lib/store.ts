@@ -149,30 +149,64 @@ function isLegacyLocalizedText(value: unknown): value is Record<string, string> 
 
 function migrateLocalizedText(value: unknown): LocalizedText {
   if (Array.isArray(value) && value.every((v) => v && typeof v === "object" && "language" in v)) {
-    return value as LocalizedText;
+    return (value as LocalizedText).map((v) => ({ ...v, content: repairFlattenedParagraph(v.content) }));
   }
   if (isLegacyLocalizedText(value)) {
     const legacy = value as Record<string, string>;
     const variants = (["uz", "ru", "en"] as Language[])
       .filter((lang) => typeof legacy[lang] === "string" && legacy[lang].trim() !== "")
-      .map((lang) => ({ language: lang, content: legacy[lang] }));
+      .map((lang) => ({ language: lang, content: repairFlattenedParagraph(legacy[lang]) }));
     return variants.length > 0 ? variants : [{ language: "uz" as Language, content: "" }];
   }
   return [{ language: "uz" as Language, content: "" }];
 }
 
-/** Plain string (pre-v3) -> a single-paragraph rich-text variant; already-migrated
- * arrays pass through untouched; anything else/empty collapses to undefined. */
-function migrateQuizDescription(value: unknown): LocalizedText | undefined {
-  if (Array.isArray(value)) return value.length > 0 ? migrateLocalizedText(value) : undefined;
-  if (typeof value === "string" && value.trim() !== "") {
-    return [{ language: "uz" as Language, content: `<p>${escapeHtml(value.trim())}</p>` }];
-  }
-  return undefined;
-}
-
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** A never-before-migrated plain string (old quiz description, pre-rich-text)
+ * — split on the line breaks the presenter actually typed and turn each
+ * into its own paragraph, instead of collapsing them into one run-on block. */
+function plainTextToParagraphs(raw: string): string {
+  const lines = raw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  const toUse = lines.length > 0 ? lines : [raw.trim()];
+  return toUse.map((l) => `<p>${escapeHtml(l)}</p>`).join("");
+}
+
+/** Tiptap-authored HTML never contains a literal newline character — every
+ * line break is a real <p>/<br> tag. So finding a raw "\n" inside already-
+ * migrated content is an unambiguous fingerprint of the v3 migration's bug:
+ * it wrapped a whole multi-line description in one <p>, which then rendered
+ * (and re-edited) as a single flattened paragraph instead of separate lines.
+ * This unwraps and re-splits it — safe to run on any content since normal,
+ * correctly-authored HTML is left untouched (the `includes("\n")` check is
+ * the guard). */
+function repairFlattenedParagraph(html: string): string {
+  if (!html.includes("\n")) return html;
+  const inner = html.replace(/^<p>/i, "").replace(/<\/p>\s*$/i, "");
+  const lines = inner
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  return lines.map((l) => `<p>${l}</p>`).join("");
+}
+
+/** Plain string (pre-v3) -> one paragraph per typed line; already-migrated
+ * arrays get any still-flattened paragraph repaired; anything else/empty
+ * collapses to undefined. */
+function migrateQuizDescription(value: unknown): LocalizedText | undefined {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return undefined;
+    return migrateLocalizedText(value);
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    return [{ language: "uz" as Language, content: plainTextToParagraphs(value) }];
+  }
+  return undefined;
 }
 
 function migrateQuizzes(quizzes: unknown): Quiz[] {
@@ -443,11 +477,14 @@ export const useQuizStore = create<QuizStore>()(
     {
       name: "zakovat-store",
       storage: createJSONStorage(() => debouncedStorageEngine),
-      version: 3,
+      version: 4,
       migrate: (persistedState, version) => {
         const state = persistedState as { quizzes?: unknown; media?: unknown } | undefined;
         if (!state) return state;
-        if (version < 3) {
+        // < 4 (not just < 3) on purpose: v3's own migration had a bug that
+        // left multi-line descriptions flattened into one paragraph, so
+        // quizzes already on v3 need this same pass re-run to get repaired.
+        if (version < 4) {
           return {
             ...state,
             quizzes: migrateQuizzes(state.quizzes),

@@ -86,6 +86,32 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
+/** A never-before-migrated plain string — split on the line breaks the
+ * presenter actually typed into one paragraph per line, instead of
+ * collapsing them into one run-on block. */
+function plainTextToParagraphs(raw: string): string {
+  const lines = raw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  const toUse = lines.length > 0 ? lines : [raw.trim()];
+  return toUse.map((l) => `<p>${l}</p>`).join("");
+}
+
+/** Tiptap-authored HTML never contains a literal newline character, so
+ * finding one inside already-migrated content is an unambiguous sign it
+ * came from the old plain-text field and (due to a bug in an earlier
+ * migration) is still sitting in one flattened paragraph. Re-splits it. */
+function repairFlattenedParagraph(html: string): string {
+  if (!html.includes("\n")) return html;
+  const inner = html.replace(/^<p>/i, "").replace(/<\/p>\s*$/i, "");
+  const lines = inner
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
+  return lines.map((l) => `<p>${l}</p>`).join("");
+}
+
 function sanitizeLocalizedText(value: unknown): LocalizedText {
   if (!Array.isArray(value)) return [];
   return value
@@ -98,7 +124,7 @@ function sanitizeLocalizedText(value: unknown): LocalizedText {
         | "uz"
         | "ru"
         | "en",
-      content: sanitizeHtml(v.content as string),
+      content: repairFlattenedParagraph(sanitizeHtml(v.content as string)),
     }));
 }
 
@@ -110,7 +136,7 @@ function sanitizeQuizDescription(value: unknown): LocalizedText | undefined {
   // Backups exported before the quiz-level description became rich text
   // stored it as a plain string — wrap it so older backups still import.
   if (typeof value === "string" && value.trim() !== "") {
-    return [{ language: "uz", content: sanitizeHtml(`<p>${value.trim()}</p>`) }];
+    return [{ language: "uz", content: sanitizeHtml(plainTextToParagraphs(value)) }];
   }
   return undefined;
 }
