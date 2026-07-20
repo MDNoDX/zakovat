@@ -310,7 +310,7 @@ export function QuestionEditorPanel({
                   : "border-border bg-surface-2 text-muted-foreground hover:bg-foreground/5"
               )}
             >
-              {opt === null ? t("timerOff") : `${opt}s`}
+              {opt === null ? t("timerOff") : opt >= 60 ? `${opt / 60} min` : `${opt}s`}
             </button>
           ))}
         </div>

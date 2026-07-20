@@ -94,9 +94,9 @@ export type QuestionType =
   | "music"
   | "video";
 
-export type TimerSeconds = 15 | 20 | 30 | 45 | 60 | null;
+export type TimerSeconds = 15 | 20 | 30 | 45 | 60 | 120 | 180 | null;
 
-export const TIMER_OPTIONS: TimerSeconds[] = [15, 20, 30, 45, 60, null];
+export const TIMER_OPTIONS: TimerSeconds[] = [15, 20, 30, 45, 60, 120, 180, null];
 
 export interface MultipleChoiceOption {
   id: string;
