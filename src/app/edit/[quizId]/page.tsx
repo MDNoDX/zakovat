@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Play } from "lucide-react";
+import { Play, Undo2, Redo2 } from "lucide-react";
 import { useQuizStore } from "@/lib/store";
+import { useUndoRedoShortcut } from "@/lib/use-undo-shortcut";
 import { DndRoot } from "@/components/edit/DndRoot";
 import { Sidebar } from "@/components/edit/Sidebar";
 import { StageSettingsPanel } from "@/components/edit/StageSettingsPanel";
@@ -26,6 +27,11 @@ export default function EditPage({ params }: { params: { quizId: string } }) {
   }>({ stageId: null, questionId: null });
 
   const quiz = useQuizStore((s) => s.quizzes.find((q) => q.id === params.quizId));
+  const canUndo = useQuizStore((s) => s.past.length > 0);
+  const canRedo = useQuizStore((s) => s.future.length > 0);
+  const undo = useQuizStore((s) => s.undo);
+  const redo = useQuizStore((s) => s.redo);
+  useUndoRedoShortcut();
 
   useEffect(() => setMounted(true), []);
 
@@ -78,6 +84,26 @@ export default function EditPage({ params }: { params: { quizId: string } }) {
           <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-6">
             <div className="text-xs text-muted-foreground">{t("editModeAutosave")}</div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                title={t("undoAction")}
+                aria-label={t("undoAction")}
+                disabled={!canUndo}
+                onClick={undo}
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                title={t("redoAction")}
+                aria-label={t("redoAction")}
+                disabled={!canRedo}
+                onClick={redo}
+              >
+                <Redo2 className="h-4 w-4" />
+              </Button>
               <LanguageSwitcher />
               <ThemeToggle />
               <Link href={`/present/${quiz.id}`} target="_blank">

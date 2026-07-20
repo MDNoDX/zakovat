@@ -1,13 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, Image as ImageIcon, X } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useQuizStore } from "@/lib/store";
-import { useMediaUrl } from "@/lib/media";
 import { emptyLocalizedText, LANGUAGES, type Quiz } from "@/types/quiz";
 import { LocalizedRichTextEditor } from "@/components/editor/LocalizedRichTextEditor";
-import { MediaLibraryDialog } from "@/components/edit/MediaLibraryDialog";
+import { BackgroundImageField } from "@/components/edit/BackgroundImageField";
 import { useWaveformStyleStore, WAVEFORM_SHAPES, WAVEFORM_SHAPE_LABEL } from "@/lib/use-waveform-style";
 import { useT, rulesTemplateHtml, useUiLanguageStore } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -23,8 +21,6 @@ export function QuizSettingsPanel({ quiz }: { quiz: Quiz }) {
   const t = useT();
   const uiLanguage = useUiLanguageStore((s) => s.language);
   const totalQuestions = quiz.stages.reduce((n, s) => n + s.questions.length, 0);
-  const [pickingBackground, setPickingBackground] = useState(false);
-  const backgroundUrl = useMediaUrl(quiz.backgroundImageId);
   const waveformShape = useWaveformStyleStore((s) => s.shape);
   const setWaveformShape = useWaveformStyleStore((s) => s.setShape);
 
@@ -98,48 +94,19 @@ export function QuizSettingsPanel({ quiz }: { quiz: Quiz }) {
         <p className="mt-1.5 text-[11px] text-muted-foreground/70">{t("defaultLanguageHint")}</p>
       </div>
 
-      <div>
-        <p className="mb-2 text-xs font-medium text-muted-foreground">{t("quizBackgroundLabel")}</p>
-        {quiz.backgroundImageId && backgroundUrl ? (
-          <div className="group relative w-full max-w-xs overflow-hidden rounded-xl border border-border">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={backgroundUrl} alt="" className="max-h-40 w-full object-cover" />
-            <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-              <button
-                onClick={() => setPickingBackground(true)}
-                className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
-                title={t("replaceMedia")}
-                aria-label={t("replaceMedia")}
-              >
-                <ImageIcon className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={() => updateQuiz(quiz.id, { backgroundImageId: null })}
-                className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
-                title={t("delete")}
-                aria-label={t("delete")}
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setPickingBackground(true)}
-            className="flex w-full max-w-xs flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface-2 py-8 text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground"
-          >
-            <ImageIcon className="h-5 w-5" />
-            <span className="text-xs">{t("chooseFile")}</span>
-          </button>
-        )}
-        <p className="mt-1.5 text-[11px] text-muted-foreground/70">{t("quizBackgroundHint")}</p>
-        <MediaLibraryDialog
-          open={pickingBackground}
-          onOpenChange={setPickingBackground}
-          filterKind="image"
-          onSelect={(ids) => updateQuiz(quiz.id, { backgroundImageId: ids[0] ?? null })}
-        />
-      </div>
+      <BackgroundImageField
+        label={t("quizBackgroundLabel")}
+        hint={t("quizBackgroundHint")}
+        mediaId={quiz.backgroundImageId}
+        onChange={(backgroundImageId) => updateQuiz(quiz.id, { backgroundImageId })}
+      />
+
+      <BackgroundImageField
+        label={t("answerBackgroundLabel")}
+        hint={t("answerBackgroundHint")}
+        mediaId={quiz.answerBackgroundImageId}
+        onChange={(answerBackgroundImageId) => updateQuiz(quiz.id, { answerBackgroundImageId })}
+      />
 
       <div>
         <p className="mb-2 text-xs font-medium text-muted-foreground">{t("waveformStyleLabel")}</p>

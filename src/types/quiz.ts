@@ -110,13 +110,22 @@ export interface MultipleChoiceOption {
  * audio has no visual frame to size (its waveform styling is separate). */
 export type MediaDisplaySize = "contain" | "cover";
 
+/** Answer media gets its own 3-tier size system rather than reusing
+ * MediaDisplaySize's plain contain/cover: "small" and "medium" both render
+ * at a fixed, predictable box (so two different source photos/clips always
+ * look the same size on stage regardless of their own pixel dimensions —
+ * previously the display size silently tracked whatever resolution the
+ * file happened to be), and "fit" is the existing full-screen treatment. */
+export type AnswerMediaSize = "small" | "medium" | "fit";
+export const ANSWER_MEDIA_SIZES: AnswerMediaSize[] = ["small", "medium", "fit"];
+
 export interface Answer {
   correctText: LocalizedText;
   explanation?: LocalizedText;
   mediaId?: string | null;
-  /** Falls back to "contain" when absent. Only meaningful when the answer
+  /** Falls back to "medium" when absent. Only meaningful when the answer
    * media is an image or video. */
-  mediaDisplaySize?: MediaDisplaySize;
+  mediaDisplaySize?: AnswerMediaSize;
   /** An alternative to the single `mediaId` slot: a collage of several
    * images revealed together as the answer (e.g. "here's the whole set").
    * When this has entries it takes over from `mediaId` for what's shown. */
@@ -294,6 +303,12 @@ export interface Stage {
   questions: Question[];
   /** Optional — falls back to DEFAULT_INTRO_STYLE when absent (older quizzes). */
   introStyle?: StageIntroStyle;
+  /** Background photo for this stage's own slides — sits between a
+   * question's own `backgroundImageId` (always wins) and the quiz-wide
+   * `backgroundImageId` (the final fallback) in the resolution chain, so a
+   * single round can have its own look without setting it question by
+   * question or changing the whole show's default. */
+  backgroundImageId?: string | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -313,6 +328,12 @@ export interface Quiz {
    * give a whole show a consistent look without setting it question by
    * question. A question's own background always wins when both are set. */
   backgroundImageId?: string | null;
+  /** Fallback background used specifically for ANSWER-reveal slides across
+   * the whole quiz (e.g. a distinct "reveal" look, different from the
+   * question backdrop) — only takes effect when the question itself has no
+   * `backgroundImageId` of its own. Falls back to the stage's and then the
+   * quiz's regular `backgroundImageId` when unset. */
+  answerBackgroundImageId?: string | null;
   stages: Stage[];
   defaultLanguage: Language;
   createdAt: number;

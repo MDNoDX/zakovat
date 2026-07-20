@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { usedLanguages, type Language, type LocalizedText, type PromptSize } from "@/types/quiz";
 import { sanitizeHtml } from "@/lib/sanitize-html";
+import { useFitScale } from "@/lib/use-fit-scale";
 import { cn } from "@/lib/utils";
 
 const FLAG: Record<Language, string> = { uz: "🇺🇿", ru: "🇷🇺", en: "🇬🇧" };
@@ -80,6 +81,18 @@ export function MultiLangText({
   const toShow = languages.filter((l) => used.includes(l));
   const finalLangs = toShow.length > 0 ? toShow : used;
 
+  // Slides are a fixed, clipped viewport -- long text at a big size (XL
+  // especially) has no scrollbar to fall back on, so it needs to actively
+  // shrink to stay on screen instead of silently running off the edge.
+  // Only the "stack" layout (the big centered prompt/answer treatment)
+  // needs this; options grids and inline layouts are already constrained
+  // by their own grid/card sizing.
+  const { ref: fitRef, scale } = useFitScale<HTMLDivElement>([
+    text,
+    size,
+    finalLangs.join(","),
+  ]);
+
   if (finalLangs.length === 0) return null;
 
   const showLabels = finalLangs.length > 1;
@@ -151,7 +164,11 @@ export function MultiLangText({
   }
 
   return (
-    <div className={cn("flex w-full flex-col gap-5", alignItems, className)}>
+    <div
+      ref={fitRef}
+      className={cn("flex w-full flex-col gap-5", alignItems, className)}
+      style={scale !== 1 ? { transform: `scale(${scale})`, transformOrigin: "center center" } : undefined}
+    >
       <AnimatePresence mode="popLayout" initial={false}>
         {finalLangs.map((lang, i) => {
           const variant = text?.find((v) => v.language === lang);

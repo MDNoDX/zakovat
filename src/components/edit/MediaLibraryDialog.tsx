@@ -195,7 +195,7 @@ export function MediaLibraryDialog({
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
-                  {(item.kind === "video" || item.kind === "audio") && (
+                  {(item.kind === "video" || item.kind === "audio" || item.kind === "image") && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

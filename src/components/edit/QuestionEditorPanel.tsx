@@ -22,9 +22,11 @@ import { useQuizStore } from "@/lib/store";
 import { uid, formatTime } from "@/lib/utils";
 import { useMediaUrl } from "@/lib/media";
 import {
+  ANSWER_MEDIA_SIZES,
   COLLAGE_REVEAL_STYLES,
   emptyLocalizedText,
   TIMER_OPTIONS,
+  type AnswerMediaSize,
   type CollageRevealStyle,
   type McAnswerRevealMode,
   type MediaDisplaySize,
@@ -377,9 +379,9 @@ export function QuestionEditorPanel({
                   }
                 />
                 {(answerMediaItem?.kind === "image" || answerMediaItem?.kind === "video") && (
-                  <DisplaySizePicker
+                  <AnswerMediaSizePicker
                     label={t("mediaDisplaySizeLabel")}
-                    value={question.answer.mediaDisplaySize ?? "contain"}
+                    value={question.answer.mediaDisplaySize ?? "medium"}
                     onChange={(mediaDisplaySize) =>
                       patch({ answer: { ...question.answer, mediaDisplaySize } })
                     }
@@ -615,7 +617,7 @@ function SingleMediaField({
             </div>
           )}
           <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-            {onTrimmed && item && (kind === "audio" || kind === "video") && (
+            {onTrimmed && item && (kind === "audio" || kind === "video" || kind === "image") && (
               <button
                 onClick={() => setTrimOpen(true)}
                 className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
@@ -699,6 +701,55 @@ function DisplaySizePicker({
             <div className="text-[10px] text-muted-foreground">
               {size === "contain" ? t("videoSizeContainHint") : t("videoSizeCoverHint")}
             </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const ANSWER_SIZE_LABEL_KEY: Record<AnswerMediaSize, "answerSizeSmall" | "answerSizeMedium" | "answerSizeFit"> = {
+  small: "answerSizeSmall",
+  medium: "answerSizeMedium",
+  fit: "answerSizeFit",
+};
+const ANSWER_SIZE_HINT_KEY: Record<
+  AnswerMediaSize,
+  "answerSizeSmallHint" | "answerSizeMediumHint" | "answerSizeFitHint"
+> = {
+  small: "answerSizeSmallHint",
+  medium: "answerSizeMediumHint",
+  fit: "answerSizeFitHint",
+};
+
+function AnswerMediaSizePicker({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: AnswerMediaSize;
+  onChange: (size: AnswerMediaSize) => void;
+}) {
+  const t = useT();
+  return (
+    <div className="mt-3">
+      <p className="mb-1.5 text-xs font-medium text-muted-foreground">{label}</p>
+      <div className="flex gap-1.5">
+        {ANSWER_MEDIA_SIZES.map((size) => (
+          <button
+            key={size}
+            type="button"
+            onClick={() => onChange(size)}
+            className={cn(
+              "flex-1 rounded-lg border px-3 py-2 text-left transition-colors",
+              value === size
+                ? "border-accent/60 bg-accent/10"
+                : "border-border bg-surface-2 hover:bg-foreground/5"
+            )}
+          >
+            <div className="text-xs font-medium">{t(ANSWER_SIZE_LABEL_KEY[size])}</div>
+            <div className="text-[10px] text-muted-foreground">{t(ANSWER_SIZE_HINT_KEY[size])}</div>
           </button>
         ))}
       </div>

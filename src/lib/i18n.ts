@@ -85,6 +85,12 @@ export const UI_STRINGS = {
     ru: "Режим редактирования · сохраняется автоматически",
     en: "Edit mode · autosaves as you go",
   },
+  undoAction: { uz: "Orqaga qaytarish (Ctrl+Z)", ru: "Отменить (Ctrl+Z)", en: "Undo (Ctrl+Z)" },
+  redoAction: {
+    uz: "Qaytadan bajarish (Ctrl+Shift+Z)",
+    ru: "Повторить (Ctrl+Shift+Z)",
+    en: "Redo (Ctrl+Shift+Z)",
+  },
   startPresentation: {
     uz: "Taqdimotni boshlash",
     ru: "Начать презентацию",
@@ -189,12 +195,18 @@ export const UI_STRINGS = {
     ru: "Короткая подпись для этого медиа (необязательно):",
     en: "Short caption for this media (optional):",
   },
-  trimMedia: { uz: "Qirqish", ru: "Обрезать", en: "Trim" },
-  trimMediaTitle: { uz: "Mediani qirqish", ru: "Обрезка медиа", en: "Trim media" },
+  trimMedia: { uz: "Tahrirlash", ru: "Редактировать", en: "Edit" },
+  trimMediaTitle: { uz: "Mediani tahrirlash", ru: "Редактирование медиа", en: "Edit media" },
   trimMediaDescription: {
-    uz: "Kerakli qismini belgilang va yangi fayl sifatida saqlang.",
-    ru: "Выберите нужный отрезок и сохраните как новый файл.",
-    en: "Pick the part you need and save it as a new file.",
+    uz: "Kerakli qismini belgilang, chekalarini kesing va yangi fayl sifatida saqlang.",
+    ru: "Выберите нужный отрезок, обрежьте края и сохраните как новый файл.",
+    en: "Pick the part you need, crop the edges, and save it as a new file.",
+  },
+  cropToggleLabel: { uz: "Kadrni kesish", ru: "Обрезать кадр", en: "Crop frame" },
+  cropHint: {
+    uz: "Kerakli qismini belgilash uchun burchaklardan torting",
+    ru: "Потяните за уголки, чтобы выбрать нужную область",
+    en: "Drag the corners to select the area you want",
   },
   trimUnsupported: {
     uz: "Brauzeringiz mediani qirqishni qo'llab-quvvatlamaydi. Chrome yoki Edge'da urinib ko'ring.",
@@ -298,6 +310,24 @@ export const UI_STRINGS = {
     ru: "Отображение на экране",
     en: "Screen display",
   },
+  answerSizeSmall: { uz: "Kichik", ru: "Маленький", en: "Small" },
+  answerSizeSmallHint: {
+    uz: "Ixcham, matn bilan bir qatorda",
+    ru: "Компактно, рядом с текстом",
+    en: "Compact, alongside the text",
+  },
+  answerSizeMedium: { uz: "O'rta", ru: "Средний", en: "Medium" },
+  answerSizeMediumHint: {
+    uz: "Kattaroq, e'tiborni tortadi",
+    ru: "Крупнее, привлекает внимание",
+    en: "Bigger, draws the eye",
+  },
+  answerSizeFit: { uz: "To'liq ekran", ru: "Во весь экран", en: "Full screen" },
+  answerSizeFitHint: {
+    uz: "Butun ekranni qoplaydi",
+    ru: "Заполняет весь экран",
+    en: "Covers the entire screen",
+  },
   makeMultipleChoice: {
     uz: "Variantli qilish",
     ru: "Сделать с вариантами",
@@ -398,6 +428,26 @@ export const UI_STRINGS = {
     uz: "Alohida fon belgilanmagan har bir savolda shu rasm ko'rsatiladi",
     ru: "Показывается на любом вопросе, где не задан свой отдельный фон",
     en: "Shown on any question that doesn't set its own background",
+  },
+  answerBackgroundLabel: {
+    uz: "Javob foni (ixtiyoriy)",
+    ru: "Фон ответа (необязательно)",
+    en: "Answer background (optional)",
+  },
+  answerBackgroundHint: {
+    uz: "Javob e'lon qilinganda shu fon ko'rsatiladi. Belgilanmagan bo'lsa, savol foni ishlatiladi.",
+    ru: "Показывается при объявлении ответа. Если не задан — используется фон вопроса.",
+    en: "Shown when the answer is revealed. Falls back to the question's own background if unset.",
+  },
+  stageBackgroundLabel: {
+    uz: "Bosqich foni (ixtiyoriy)",
+    ru: "Фон этапа (необязательно)",
+    en: "Stage background (optional)",
+  },
+  stageBackgroundHint: {
+    uz: "Shu bosqichdagi barcha slaydlarda ishlatiladi. Belgilanmagan bo'lsa, Zakovat foni ishlatiladi.",
+    ru: "Используется на всех слайдах этого этапа. Если не задан — используется фон викторины.",
+    en: "Used on every slide in this stage. Falls back to the quiz's own background if unset.",
   },
   waveformStyleLabel: {
     uz: "To'lqin shakli",

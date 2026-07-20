@@ -3,6 +3,7 @@
 import { useQuizStore } from "@/lib/store";
 import { LocalizedTextInput } from "@/components/editor/LocalizedTextInput";
 import { LocalizedRichTextEditor } from "@/components/editor/LocalizedRichTextEditor";
+import { BackgroundImageField } from "@/components/edit/BackgroundImageField";
 import {
   DEFAULT_INTRO_STYLE,
   PROMPT_SIZES,
@@ -68,6 +69,13 @@ export function StageSettingsPanel({
         value={stage.description}
         placeholder={t("descRulesPlaceholder")}
         onChange={(description) => updateStage(quizId, stage.id, { description })}
+      />
+
+      <BackgroundImageField
+        label={t("stageBackgroundLabel")}
+        hint={t("stageBackgroundHint")}
+        mediaId={stage.backgroundImageId}
+        onChange={(backgroundImageId) => updateStage(quizId, stage.id, { backgroundImageId })}
       />
 
       <div className="rounded-2xl border border-border bg-surface-2/50 p-5">

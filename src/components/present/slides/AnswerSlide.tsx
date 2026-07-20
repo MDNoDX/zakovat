@@ -69,7 +69,14 @@ function GenericAnswer({
   const hasCorrect = !isLocalizedTextEmpty(correctText);
   const hasExplanation = !isLocalizedTextEmpty(question.answer.explanation);
   const primaryLanguage = languages[0] ?? "uz";
-  const isCover = question.answer.mediaDisplaySize === "cover" && (mediaKind === "image" || mediaKind === "video");
+  const answerMediaSize = question.answer.mediaDisplaySize ?? "medium";
+  const isCover = answerMediaSize === "fit" && (mediaKind === "image" || mediaKind === "video");
+  // Fixed height (not a max-height cap) so object-contain always scales the
+  // media up or down to exactly this box — two photos of wildly different
+  // native resolutions end up the same displayed size instead of one
+  // showing tiny just because its source file happened to be smaller.
+  const sizeBoxClass =
+    answerMediaSize === "small" ? "h-[28vh] max-w-[55vw]" : "h-[52vh] max-w-[82vw]";
   const collageIds = question.answer.mediaIds ?? [];
   const hasCollage = collageIds.length > 0;
   // Media of any kind IS the answer when there's no separate text for it —
@@ -160,7 +167,7 @@ function GenericAnswer({
           key={question.answer.mediaId}
           src={url}
           controls
-          className="max-h-[55vh] w-full max-w-4xl rounded-2xl border border-white/10 bg-black shadow-soft"
+          className={`w-auto rounded-2xl border border-white/10 bg-black object-contain shadow-soft ${sizeBoxClass}`}
         />
       )}
       {url && mediaKind === "audio" && (
@@ -171,7 +178,7 @@ function GenericAnswer({
         <img
           src={url}
           alt=""
-          className="max-h-[55vh] max-w-[75vw] rounded-2xl border border-white/10 object-contain"
+          className={`w-auto rounded-2xl border border-white/10 object-contain ${sizeBoxClass}`}
         />
       )}
       <MediaCaption text={mediaCaption} />

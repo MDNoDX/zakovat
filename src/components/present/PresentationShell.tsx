@@ -226,12 +226,28 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   const timerSeconds =
     slide.kind === "question" ? slide.question.timerSeconds : null;
 
-  // A question's own background always wins; the quiz-level one is just a
-  // fallback so a whole show can share one look without setting it per question.
+  // Resolution order, most specific first: the question's own background
+  // always wins. On an actual answer-reveal slide specifically, the quiz's
+  // dedicated answer background comes next (a deliberate "reveal look"
+  // that would otherwise be pointless if a plain stage background could
+  // silently override it). Then the stage's background, then finally the
+  // whole quiz's default — so a show can layer looks from general to
+  // specific without setting anything question by question.
   const backgroundImageId =
     slide.kind === "question" || slide.kind === "answer" || slide.kind === "recap"
-      ? slide.question.backgroundImageId ?? quiz.backgroundImageId ?? null
-      : null;
+      ? slide.kind === "answer"
+        ? slide.question.backgroundImageId ??
+          quiz.answerBackgroundImageId ??
+          slide.stage.backgroundImageId ??
+          quiz.backgroundImageId ??
+          null
+        : slide.question.backgroundImageId ??
+          slide.stage.backgroundImageId ??
+          quiz.backgroundImageId ??
+          null
+      : slide.kind === "stage-intro"
+        ? slide.stage.backgroundImageId ?? quiz.backgroundImageId ?? null
+        : null;
 
   return (
     <div

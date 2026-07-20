@@ -15,9 +15,23 @@ import type {
   Stage,
 } from "@/types/quiz";
 
+interface HistoryEntry {
+  quizzes: Quiz[];
+  media: MediaItem[];
+}
+
 interface QuizStore {
   quizzes: Quiz[];
   media: MediaItem[];
+
+  // Undo/redo history — deliberately NOT persisted (see `partialize` below).
+  // `past`/`future` hold full quizzes+media snapshots from before/after the
+  // current state; see `pushHistory` for how entries get coalesced so a
+  // burst of typing becomes one undo step instead of one per keystroke.
+  past: HistoryEntry[];
+  future: HistoryEntry[];
+  undo: () => void;
+  redo: () => void;
 
   // Quiz-level
   createQuiz: (title: string, description?: LocalizedText) => string;
@@ -27,7 +41,12 @@ interface QuizStore {
   duplicateQuiz: (quizId: string) => string | undefined;
   updateQuiz: (
     quizId: string,
-    patch: Partial<Pick<Quiz, "title" | "description" | "defaultLanguage" | "backgroundImageId">>
+    patch: Partial<
+      Pick<
+        Quiz,
+        "title" | "description" | "defaultLanguage" | "backgroundImageId" | "answerBackgroundImageId"
+      >
+    >
   ) => void;
   getQuiz: (quizId: string) => Quiz | undefined;
 
@@ -68,6 +87,36 @@ interface QuizStore {
 
 function touch<T extends { updatedAt: number }>(obj: T): T {
   return { ...obj, updatedAt: Date.now() };
+}
+
+const MAX_HISTORY = 50;
+// Continuous edits (typing a character into a rich-text field fires an
+// update per keystroke) would otherwise push one full snapshot per
+// keystroke, making undo revert one letter at a time and bloating memory.
+// Non-"force" pushes are coalesced: if the last checkpoint was taken within
+// this window, the burst just continues extending it instead of adding a
+// new one, so undo instead reverts a whole recent burst of typing/adjusting
+// at once. Discrete actions (delete/add/duplicate/reorder) always force a
+// fresh checkpoint since each one is a single deliberate action.
+const HISTORY_COALESCE_MS = 800;
+let lastHistoryPushAt = 0;
+
+function historyEntry(s: Pick<QuizStore, "quizzes" | "media">): HistoryEntry {
+  return { quizzes: s.quizzes, media: s.media };
+}
+
+/** Returns the `past`/`future` slice of a set() patch for a mutating action.
+ * Called with the state as it was *before* the mutation being applied in
+ * the same set() call, so the pushed entry is exactly what undo should
+ * restore. Always clears `future` since any new edit invalidates whatever
+ * redo history existed. */
+function pushHistory(s: QuizStore, force: boolean): Pick<QuizStore, "past" | "future"> {
+  const now = Date.now();
+  if (!force && s.past.length > 0 && now - lastHistoryPushAt < HISTORY_COALESCE_MS) {
+    return { past: s.past, future: [] };
+  }
+  lastHistoryPushAt = now;
+  return { past: [...s.past.slice(-(MAX_HISTORY - 1)), historyEntry(s)], future: [] };
 }
 
 // Every keystroke in a question/answer editor runs through this store, and
@@ -264,14 +313,18 @@ export const useQuizStore = create<QuizStore>()(
 
       createQuiz: (title, description) => {
         const quiz = createQuiz(title, description);
-        set((s) => ({ quizzes: [...s.quizzes, quiz] }));
+        set((s) => ({ ...pushHistory(s, true), quizzes: [...s.quizzes, quiz] }));
         return quiz.id;
       },
 
-      installQuiz: (quiz) => set((s) => ({ quizzes: [...s.quizzes, quiz] })),
+      installQuiz: (quiz) =>
+        set((s) => ({ ...pushHistory(s, true), quizzes: [...s.quizzes, quiz] })),
 
       deleteQuiz: (quizId) =>
-        set((s) => ({ quizzes: s.quizzes.filter((q) => q.id !== quizId) })),
+        set((s) => ({
+          ...pushHistory(s, true),
+          quizzes: s.quizzes.filter((q) => q.id !== quizId),
+        })),
 
       duplicateQuiz: (quizId) => {
         const source = get().quizzes.find((q) => q.id === quizId);
@@ -284,12 +337,13 @@ export const useQuizStore = create<QuizStore>()(
           createdAt: now,
           updatedAt: now,
         };
-        set((s) => ({ quizzes: [...s.quizzes, cloned] }));
+        set((s) => ({ ...pushHistory(s, true), quizzes: [...s.quizzes, cloned] }));
         return cloned.id;
       },
 
       updateQuiz: (quizId, patch) =>
         set((s) => ({
+          ...pushHistory(s, false),
           quizzes: s.quizzes.map((q) => (q.id === quizId ? touch({ ...q, ...patch }) : q)),
         })),
 
@@ -299,6 +353,7 @@ export const useQuizStore = create<QuizStore>()(
         const quiz = get().quizzes.find((q) => q.id === quizId);
         const stage = createStage(quiz ? quiz.stages.length : 0);
         set((s) => ({
+          ...pushHistory(s, true),
           quizzes: s.quizzes.map((q) =>
             q.id === quizId ? touch({ ...q, stages: [...q.stages, stage] }) : q
           ),
@@ -308,6 +363,7 @@ export const useQuizStore = create<QuizStore>()(
 
       updateStage: (quizId, stageId, patch) =>
         set((s) => ({
+          ...pushHistory(s, false),
           quizzes: s.quizzes.map((q) =>
             q.id !== quizId
               ? q
@@ -322,6 +378,7 @@ export const useQuizStore = create<QuizStore>()(
 
       deleteStage: (quizId, stageId) =>
         set((s) => ({
+          ...pushHistory(s, true),
           quizzes: s.quizzes.map((q) =>
             q.id !== quizId
               ? q
@@ -331,6 +388,7 @@ export const useQuizStore = create<QuizStore>()(
 
       reorderStages: (quizId, fromIndex, toIndex) =>
         set((s) => ({
+          ...pushHistory(s, true),
           quizzes: s.quizzes.map((q) =>
             q.id !== quizId
               ? q
@@ -340,6 +398,7 @@ export const useQuizStore = create<QuizStore>()(
 
       duplicateStage: (quizId, stageId) =>
         set((s) => ({
+          ...pushHistory(s, true),
           quizzes: s.quizzes.map((q) => {
             if (q.id !== quizId) return q;
             const source = q.stages.find((st) => st.id === stageId);
@@ -365,6 +424,7 @@ export const useQuizStore = create<QuizStore>()(
       addQuestion: (quizId, stageId, type, prompt) => {
         const question = prompt ? { ...createQuestion(type), prompt } : createQuestion(type);
         set((s) => ({
+          ...pushHistory(s, true),
           quizzes: s.quizzes.map((q) =>
             q.id !== quizId
               ? q
@@ -383,6 +443,7 @@ export const useQuizStore = create<QuizStore>()(
 
       updateQuestion: (quizId, stageId, questionId, patch) =>
         set((s) => ({
+          ...pushHistory(s, false),
           quizzes: s.quizzes.map((q) =>
             q.id !== quizId
               ? q
@@ -406,6 +467,7 @@ export const useQuizStore = create<QuizStore>()(
 
       deleteQuestion: (quizId, stageId, questionId) =>
         set((s) => ({
+          ...pushHistory(s, true),
           quizzes: s.quizzes.map((q) =>
             q.id !== quizId
               ? q
@@ -425,6 +487,7 @@ export const useQuizStore = create<QuizStore>()(
 
       reorderQuestions: (quizId, stageId, fromIndex, toIndex) =>
         set((s) => ({
+          ...pushHistory(s, true),
           quizzes: s.quizzes.map((q) =>
             q.id !== quizId
               ? q
@@ -441,6 +504,7 @@ export const useQuizStore = create<QuizStore>()(
 
       duplicateQuestion: (quizId, stageId, questionId) =>
         set((s) => ({
+          ...pushHistory(s, true),
           quizzes: s.quizzes.map((q) => {
             if (q.id !== quizId) return q;
             return touch({
@@ -464,20 +528,58 @@ export const useQuizStore = create<QuizStore>()(
           }),
         })),
 
-      addMedia: (item) => set((s) => ({ media: [item, ...s.media] })),
+      addMedia: (item) =>
+        set((s) => ({ ...pushHistory(s, true), media: [item, ...s.media] })),
 
       deleteMedia: (mediaId) =>
-        set((s) => ({ media: s.media.filter((m) => m.id !== mediaId) })),
+        set((s) => ({
+          ...pushHistory(s, true),
+          media: s.media.filter((m) => m.id !== mediaId),
+        })),
 
       updateMediaCaption: (mediaId, caption) =>
         set((s) => ({
+          ...pushHistory(s, true),
           media: s.media.map((m) => (m.id === mediaId ? { ...m, caption } : m)),
         })),
+
+      past: [],
+      future: [],
+
+      undo: () => {
+        const s = get();
+        if (s.past.length === 0) return;
+        const prev = s.past[s.past.length - 1];
+        set({
+          quizzes: prev.quizzes,
+          media: prev.media,
+          past: s.past.slice(0, -1),
+          future: [historyEntry(s), ...s.future].slice(0, MAX_HISTORY),
+        });
+      },
+
+      redo: () => {
+        const s = get();
+        if (s.future.length === 0) return;
+        const next = s.future[0];
+        set({
+          quizzes: next.quizzes,
+          media: next.media,
+          past: [...s.past, historyEntry(s)].slice(-MAX_HISTORY),
+          future: s.future.slice(1),
+        });
+      },
     }),
     {
       name: "zakovat-store",
       storage: createJSONStorage(() => debouncedStorageEngine),
       version: 4,
+      // Undo/redo history is deliberately excluded from persistence — it's
+      // only meaningful within a live editing session, and persisting
+      // potentially-large full-state snapshots on every edit would bloat
+      // localStorage and slow down the already-debounced writes for no
+      // benefit (a reloaded page has nothing sensible to redo back to).
+      partialize: (state) => ({ quizzes: state.quizzes, media: state.media }),
       migrate: (persistedState, version) => {
         const state = persistedState as { quizzes?: unknown; media?: unknown } | undefined;
         if (!state) return state;

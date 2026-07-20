@@ -280,6 +280,7 @@ export async function importBackup(file: File): Promise<ImportResult> {
             rawStage.revealMode === "end-of-stage" || rawStage.revealMode === "manual"
               ? rawStage.revealMode
               : "after-each",
+          backgroundImageId: remapMediaId(rawStage.backgroundImageId),
           questions,
           createdAt: now,
           updatedAt: now,
@@ -294,6 +295,8 @@ export async function importBackup(file: File): Promise<ImportResult> {
         rawQuiz.defaultLanguage === "ru" || rawQuiz.defaultLanguage === "en"
           ? rawQuiz.defaultLanguage
           : "uz",
+      backgroundImageId: remapMediaId(rawQuiz.backgroundImageId),
+      answerBackgroundImageId: remapMediaId(rawQuiz.answerBackgroundImageId),
       stages,
       createdAt: now,
       updatedAt: now,
