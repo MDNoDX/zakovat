@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image as ImageIcon,
   Music,
@@ -557,9 +557,44 @@ function SingleMediaField({
   const [trimOpen, setTrimOpen] = useState(false);
   const t = useT();
 
+  // Resolving the blob from IndexedDB is async, so `url` is legitimately
+  // still null for a brief moment right after `mediaId` changes — this
+  // only flips to "actually broken" if it's *still* null a while later,
+  // so a real failure shows a clear, actionable error instead of quietly
+  // looking identical to "nothing was ever attached" (which is confusing:
+  // the field clearly has *something* attached, it just won't load).
+  const [stalled, setStalled] = useState(false);
+  useEffect(() => {
+    setStalled(false);
+    if (!mediaId) return;
+    const timer = setTimeout(() => setStalled(true), 1500);
+    return () => clearTimeout(timer);
+  }, [mediaId]);
+  const isBroken = !!mediaId && !url && stalled;
+
   return (
     <div>
-      {mediaId && url ? (
+      {isBroken ? (
+        <div className="flex w-full max-w-xs flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-red-500/40 bg-red-500/5 py-8 text-center text-red-400">
+          <Icon className="h-5 w-5" />
+          <span className="text-xs font-medium">{t("mediaLoadFailedLabel")}</span>
+          <span className="max-w-[15rem] text-[11px] text-red-400/70">{t("mediaLoadFailedHint")}</span>
+          <div className="mt-1 flex gap-2">
+            <button
+              onClick={onPick}
+              className="rounded-lg border border-red-500/30 px-2.5 py-1 text-[11px] font-medium text-red-300 hover:bg-red-500/10"
+            >
+              {t("replaceMedia")}
+            </button>
+            <button
+              onClick={onClear}
+              className="rounded-lg border border-red-500/30 px-2.5 py-1 text-[11px] font-medium text-red-300 hover:bg-red-500/10"
+            >
+              {t("delete")}
+            </button>
+          </div>
+        </div>
+      ) : mediaId && url ? (
         <div className="group relative w-full max-w-xs overflow-hidden rounded-xl border border-border">
           {kind === "image" && (
             // eslint-disable-next-line @next/next/no-img-element

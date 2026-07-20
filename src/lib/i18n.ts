@@ -441,6 +441,16 @@ export const UI_STRINGS = {
   },
   replaceMedia: { uz: "Almashtirish", ru: "Заменить", en: "Replace" },
   chooseFile: { uz: "Fayl tanlash", ru: "Выбрать файл", en: "Choose file" },
+  mediaLoadFailedLabel: {
+    uz: "Media yuklanmadi",
+    ru: "Медиа не загрузилось",
+    en: "Media failed to load",
+  },
+  mediaLoadFailedHint: {
+    uz: "Fayl buzilgan yoki topilmadi. Boshqasini tanlang yoki olib tashlang.",
+    ru: "Файл повреждён или не найден. Выберите другой или удалите.",
+    en: "The file is missing or corrupted. Pick another one or remove it.",
+  },
   collageImagesInfoSuffix: {
     uz: "ta rasm — tizim avtomatik kollaj yaratadi",
     ru: "фото — коллаж собирается автоматически",

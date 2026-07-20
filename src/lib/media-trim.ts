@@ -187,6 +187,128 @@ async function trimAudioFast(sourceUrl: string, start: number, end: number): Pro
   return blob;
 }
 
+/** Fallback for the fast path above: `decodeAudioData()`'s decoder support
+ * is narrower than a normal `<video>`/`<audio>` element's full playback
+ * pipeline — some browsers reject certain codecs (particularly audio
+ * embedded in a video container) that play back perfectly fine. When that
+ * happens this plays the source through a real, silent Web Audio graph
+ * (MediaElementSource -> MediaStreamDestination, never connected to
+ * speakers) and records it with MediaRecorder — the same reliable approach
+ * this project used before the fast path existed. Slower (real-time bound
+ * by [start, end]'s length), but it's the correctness net: whatever a
+ * browser can actually PLAY, this can extract the audio from. */
+function trimAudioRealtime(
+  sourceUrl: string,
+  sourceKind: "video" | "audio",
+  { start, end }: { start: number; end: number }
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const AudioCtx = getAudioContextCtor();
+    if (!AudioCtx) {
+      reject(new TrimError("TRIM_UNSUPPORTED"));
+      return;
+    }
+
+    const el = document.createElement(sourceKind === "video" ? "video" : "audio");
+    el.src = sourceUrl;
+    el.preload = "auto";
+    el.muted = false;
+    el.style.position = "fixed";
+    el.style.opacity = "0";
+    el.style.pointerEvents = "none";
+    el.style.width = "1px";
+    el.style.height = "1px";
+    document.body.appendChild(el);
+
+    let audioCtx: AudioContext | null = null;
+    let stopTimer: ReturnType<typeof setTimeout> | null = null;
+    let settled = false;
+
+    const cleanup = () => {
+      if (stopTimer) clearTimeout(stopTimer);
+      el.pause();
+      el.remove();
+      audioCtx?.close().catch(() => {});
+    };
+
+    const fail = (err: TrimError) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(err);
+    };
+
+    const succeed = (blob: Blob) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (blob.size === 0) {
+        reject(new TrimError("EMPTY_OUTPUT"));
+        return;
+      }
+      resolve(blob);
+    };
+
+    el.onerror = () => fail(new TrimError("SOURCE_LOAD_FAILED"));
+
+    el.onloadedmetadata = () => {
+      const clampedEnd = Math.min(end, el.duration || end);
+      if (!(clampedEnd > start)) {
+        fail(new TrimError("INVALID_RANGE"));
+        return;
+      }
+      el.currentTime = start;
+
+      el.onseeked = () => {
+        let finalStream: MediaStream;
+        try {
+          audioCtx = new AudioCtx();
+          const source = audioCtx.createMediaElementSource(el);
+          const dest = audioCtx.createMediaStreamDestination();
+          source.connect(dest);
+          // Deliberately not connected to audioCtx.destination — this is
+          // what keeps the fallback silent instead of playing out loud.
+          finalStream = dest.stream;
+        } catch {
+          fail(new TrimError("CAPTURE_FAILED"));
+          return;
+        }
+
+        const mimeType = pickMimeType("audio");
+        const chunks: BlobPart[] = [];
+        let recorder: MediaRecorder;
+        try {
+          recorder = new MediaRecorder(finalStream, { mimeType });
+        } catch {
+          fail(new TrimError("RECORDER_INIT_FAILED"));
+          return;
+        }
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+        recorder.onerror = () => fail(new TrimError("RECORD_FAILED"));
+        recorder.onstop = () => succeed(new Blob(chunks, { type: mimeType }));
+
+        const stop = () => {
+          if (recorder.state !== "inactive") recorder.stop();
+        };
+        el.onended = stop;
+
+        recorder.start();
+        el.play()
+          .then(() => {
+            const durationMs = (clampedEnd - start) * 1000;
+            stopTimer = setTimeout(stop, durationMs + 60);
+          })
+          .catch(() => {
+            fail(new TrimError("PLAYBACK_FAILED"));
+          });
+      };
+    };
+  });
+}
+
 /** The realtime path — unavoidable for keeping the video picture, see the
  * file-level comment above for why. Only ever reached when the source is a
  * video and its picture is being kept (audio-only output, from either an
@@ -298,17 +420,28 @@ function trimVideoRealtime(sourceUrl: string, { start, end }: { start: number; e
  * Trims (and optionally strips the video from) a media blob, returning a
  * new Blob for the requested [start, end] range. Picks the fast
  * decode-and-slice path whenever the output is audio-only (the common
- * case), and only falls back to realtime capture when the video picture
- * itself needs to be kept.
+ * case) and quietly falls back to the realtime silent-capture path if that
+ * fails for this particular file (a codec `decodeAudioData` won't touch),
+ * so a browser quirk on one file never means a broken result instead of
+ * just a slower one. Only uses realtime video capture when the video
+ * picture itself needs to be kept.
  */
-export function trimMedia(
+export async function trimMedia(
   sourceUrl: string,
   sourceKind: "video" | "audio",
   { start, end, audioOnly }: TrimOptions
 ): Promise<Blob> {
   const outputIsVideo = sourceKind === "video" && !audioOnly;
-  if (!outputIsVideo) {
-    return trimAudioFast(sourceUrl, start, end);
+  if (outputIsVideo) {
+    return trimVideoRealtime(sourceUrl, { start, end });
   }
-  return trimVideoRealtime(sourceUrl, { start, end });
+  try {
+    return await trimAudioFast(sourceUrl, start, end);
+  } catch (err) {
+    // INVALID_RANGE means the requested [start, end] itself is bad — retrying
+    // with a different capture method won't fix that, so it should surface
+    // as-is rather than being masked by whatever the fallback fails with.
+    if (err instanceof TrimError && err.code === "INVALID_RANGE") throw err;
+    return trimAudioRealtime(sourceUrl, sourceKind, { start, end });
+  }
 }
