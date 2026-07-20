@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { HtmlLangSync } from "@/components/HtmlLangSync";
+import { CrossTabSync } from "@/components/CrossTabSync";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-sans" });
 
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans antialiased">
         <HtmlLangSync />
+        <CrossTabSync />
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
       </body>
     </html>
