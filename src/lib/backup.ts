@@ -18,6 +18,7 @@ import { useQuizStore } from "@/lib/store";
 import { saveMediaBlob } from "@/lib/media";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import type {
+  ClosingSlideSettings,
   LocalizedText,
   MediaItem,
   Question,
@@ -139,6 +140,27 @@ function sanitizeQuizDescription(value: unknown): LocalizedText | undefined {
     return [{ language: "uz", content: sanitizeHtml(plainTextToParagraphs(value)) }];
   }
   return undefined;
+}
+
+function sanitizeClosingSlide(
+  value: unknown,
+  remapMediaId: (id: unknown) => string | null
+): ClosingSlideSettings | undefined {
+  if (!isPlainObject(value)) return undefined;
+  const winnersRaw = isPlainObject(value.winners) ? value.winners : {};
+  const winner = (v: unknown) => (typeof v === "string" && v.trim() !== "" ? v : undefined);
+  return {
+    enabled: value.enabled === true,
+    title: sanitizeQuizDescription(value.title),
+    message: sanitizeQuizDescription(value.message),
+    backgroundImageId: remapMediaId(value.backgroundImageId),
+    showRanking: value.showRanking !== false,
+    winners: {
+      first: winner(winnersRaw.first),
+      second: winner(winnersRaw.second),
+      third: winner(winnersRaw.third),
+    },
+  };
 }
 
 export interface ImportResult {
@@ -329,6 +351,7 @@ export async function importBackup(file: File): Promise<ImportResult> {
           : "uz",
       backgroundImageId: remapMediaId(rawQuiz.backgroundImageId),
       answerBackgroundImageId: remapMediaId(rawQuiz.answerBackgroundImageId),
+      closingSlide: sanitizeClosingSlide(rawQuiz.closingSlide, remapMediaId),
       stages,
       createdAt: now,
       updatedAt: now,

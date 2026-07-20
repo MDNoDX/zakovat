@@ -130,6 +130,29 @@ export function RichTextEditor({
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   };
 
+  // Per-selection sizing: with real highlighted text, resize just that
+  // run — same as any word processor. But a plain cursor position with
+  // nothing selected is the common case here (short fields like the
+  // description or correct-answer text), and applying a mark to an empty
+  // selection only affects characters typed *after* the click — nothing
+  // visibly changes, which reads as "the button doesn't work." So an
+  // empty selection instead resizes the whole paragraph/list-item the
+  // cursor is currently in, giving an immediate, visible result.
+  const applyFontSize = (size: string) => {
+    const { selection } = editor.state;
+    if (selection.empty) {
+      const { $from } = selection;
+      editor
+        .chain()
+        .focus()
+        .setTextSelection({ from: $from.start(), to: $from.end() })
+        .setFontSize(size)
+        .run();
+    } else {
+      editor.chain().focus().setFontSize(size).run();
+    }
+  };
+
   return (
     <div className={cn("rounded-lg border border-border bg-surface-2", className)}>
       <div className="flex flex-wrap items-center gap-0.5 border-b border-border px-1.5 py-1">
@@ -183,7 +206,7 @@ export function RichTextEditor({
               <button
                 key={f.value}
                 type="button"
-                onClick={() => editor.chain().focus().setFontSize(f.value).run()}
+                onClick={() => applyFontSize(f.value)}
                 className="rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
               >
                 {f.label}

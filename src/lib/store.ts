@@ -44,7 +44,12 @@ interface QuizStore {
     patch: Partial<
       Pick<
         Quiz,
-        "title" | "description" | "defaultLanguage" | "backgroundImageId" | "answerBackgroundImageId"
+        | "title"
+        | "description"
+        | "defaultLanguage"
+        | "backgroundImageId"
+        | "answerBackgroundImageId"
+        | "closingSlide"
       >
     >
   ) => void;

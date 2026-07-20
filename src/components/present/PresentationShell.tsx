@@ -21,6 +21,7 @@ import { MultiImageSlide } from "@/components/present/slides/MultiImageSlide";
 import { MusicQuestionSlide } from "@/components/present/slides/MusicQuestionSlide";
 import { VideoQuestionSlide } from "@/components/present/slides/VideoQuestionSlide";
 import { AnswerSlide } from "@/components/present/slides/AnswerSlide";
+import { FinalSlide } from "@/components/present/slides/FinalSlide";
 import { tFor } from "@/lib/i18n";
 
 export function PresentationShell({ quiz }: { quiz: Quiz }) {
@@ -149,9 +150,10 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   const jumpToQuestionInStage = useCallback(
     (n: number) => {
       const current = slides[index];
-      if (!current) return;
+      if (!current || current.kind === "final") return;
+      const stageId = current.stage.id;
       const target = slides.findIndex(
-        (s) => s.stage.id === current.stage.id && s.kind === "question" && s.indexInStage === n - 1
+        (s) => s.kind === "question" && s.stage.id === stageId && s.indexInStage === n - 1
       );
       if (target >= 0) setIndex(target);
     },
@@ -165,15 +167,17 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
   // reveal answers. jumpBackToStageEnd is the matching way back.
   const jumpToFirstQuestion = useCallback(() => {
     const current = slides[index];
-    if (!current) return;
-    const target = slides.findIndex((s) => s.stage.id === current.stage.id && s.kind === "question");
+    if (!current || current.kind === "final") return;
+    const stageId = current.stage.id;
+    const target = slides.findIndex((s) => s.kind === "question" && s.stage.id === stageId);
     if (target >= 0) setIndex(target);
   }, [slides, index]);
 
   const jumpBackToStageEnd = useCallback(() => {
     const current = slides[index];
-    if (!current) return;
-    const target = slides.findIndex((s) => s.stage.id === current.stage.id && s.kind === "stage-end");
+    if (!current || current.kind === "final") return;
+    const stageId = current.stage.id;
+    const target = slides.findIndex((s) => s.kind === "stage-end" && s.stage.id === stageId);
     if (target >= 0) setIndex(target);
   }, [slides, index]);
 
@@ -216,7 +220,8 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
     );
   }
 
-  const stageName = resolveText(slide.stage.name, primaryLanguage);
+  const stageName =
+    slide.kind === "final" ? tFor("closingSlideLabel", primaryLanguage) : resolveText(slide.stage.name, primaryLanguage);
 
   const questionMeta =
     slide.kind === "question" || slide.kind === "answer" || slide.kind === "recap"
@@ -247,7 +252,9 @@ export function PresentationShell({ quiz }: { quiz: Quiz }) {
           null
       : slide.kind === "stage-intro"
         ? slide.stage.backgroundImageId ?? quiz.backgroundImageId ?? null
-        : null;
+        : slide.kind === "final"
+          ? slide.quiz.closingSlide?.backgroundImageId ?? slide.quiz.backgroundImageId ?? null
+          : null;
 
   return (
     <div
@@ -368,6 +375,8 @@ function SlideRenderer({
       return <StageIntroSlide stage={slide.stage} languages={languages} />;
     case "stage-end":
       return <StageEndSlide language={primaryLanguage} onReviewQuestions={onReviewQuestions} />;
+    case "final":
+      return <FinalSlide quiz={slide.quiz} languages={languages} />;
     case "answer":
       return (
         <AnswerSlide

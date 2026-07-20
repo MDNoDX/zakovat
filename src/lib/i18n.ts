@@ -593,6 +593,51 @@ export const UI_STRINGS = {
     ru: "Нажмите «E» для пояснения",
     en: "Press \"E\" for the explanation",
   },
+
+  // Closing/final slide
+  closingSlideLabel: { uz: "Yakuniy slayd", ru: "Финальный слайд", en: "Closing slide" },
+  closingSlideEnableLabel: {
+    uz: "Taqdimot oxirida yakuniy slayd ko'rsatilsin",
+    ru: "Показывать финальный слайд в конце презентации",
+    en: "Show a closing slide at the end of the presentation",
+  },
+  closingSlideEnableHint: {
+    uz: "Barcha bosqichlardan keyin bitta marta ko'rsatiladi — g'oliblarni e'lon qilish uchun qulay.",
+    ru: "Показывается один раз, после всех этапов — удобно для объявления победителей.",
+    en: "Shown once, after every stage — a good place to announce the winners.",
+  },
+  closingTitleLabel: { uz: "Sarlavha", ru: "Заголовок", en: "Title" },
+  closingDefaultTitle: { uz: "Tabriklaymiz!", ru: "Поздравляем!", en: "Congratulations!" },
+  closingMessageLabel: { uz: "Xabar (ixtiyoriy)", ru: "Сообщение (необязательно)", en: "Message (optional)" },
+  closingMessagePlaceholder: {
+    uz: "Barchaga rahmat! Ko'rishguncha...",
+    ru: "Спасибо всем! До встречи...",
+    en: "Thanks to everyone! See you next time...",
+  },
+  closingBackgroundLabel: {
+    uz: "Yakuniy slayd foni (ixtiyoriy)",
+    ru: "Фон финального слайда (необязательно)",
+    en: "Closing slide background (optional)",
+  },
+  closingBackgroundHint: {
+    uz: "Belgilanmagan bo'lsa, Zakovat foni ishlatiladi.",
+    ru: "Если не задан — используется фон викторины.",
+    en: "Falls back to the quiz's own background if unset.",
+  },
+  closingShowRankingLabel: {
+    uz: "G'oliblar reytingini ko'rsatish (1-, 2-, 3-o'rin)",
+    ru: "Показывать рейтинг победителей (1-е, 2-е, 3-е место)",
+    en: "Show a winners' ranking (1st, 2nd, 3rd place)",
+  },
+  closingShowRankingHint: {
+    uz: "Jamoa nomlarini shu yerda oldindan yozib qo'yishingiz mumkin, yoki taqdimot paytida to'g'ridan-to'g'ri slaydda yozsangiz ham bo'ladi.",
+    ru: "Названия команд можно вписать заранее здесь, либо прямо во время презентации на самом слайде.",
+    en: "Team names can be pre-filled here, or typed directly on the slide during the presentation.",
+  },
+  firstPlaceLabel: { uz: "1-o'rin", ru: "1-е место", en: "1st place" },
+  secondPlaceLabel: { uz: "2-o'rin", ru: "2-е место", en: "2nd place" },
+  thirdPlaceLabel: { uz: "3-o'rin", ru: "3-е место", en: "3rd place" },
+  teamNamePlaceholder: { uz: "Jamoa nomi", ru: "Название команды", en: "Team name" },
 } satisfies Record<string, Dict>;
 
 export type UiStringKey = keyof typeof UI_STRINGS;

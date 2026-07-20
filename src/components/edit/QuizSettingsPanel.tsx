@@ -3,7 +3,14 @@
 import { Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useQuizStore } from "@/lib/store";
-import { emptyLocalizedText, LANGUAGES, type Quiz } from "@/types/quiz";
+import {
+  DEFAULT_CLOSING_SLIDE,
+  emptyLocalizedText,
+  LANGUAGES,
+  type ClosingSlideSettings,
+  type ClosingWinners,
+  type Quiz,
+} from "@/types/quiz";
 import { LocalizedRichTextEditor } from "@/components/editor/LocalizedRichTextEditor";
 import { BackgroundImageField } from "@/components/edit/BackgroundImageField";
 import { useWaveformStyleStore, WAVEFORM_SHAPES, WAVEFORM_SHAPE_LABEL } from "@/lib/use-waveform-style";
@@ -23,6 +30,15 @@ export function QuizSettingsPanel({ quiz }: { quiz: Quiz }) {
   const totalQuestions = quiz.stages.reduce((n, s) => n + s.questions.length, 0);
   const waveformShape = useWaveformStyleStore((s) => s.shape);
   const setWaveformShape = useWaveformStyleStore((s) => s.setShape);
+  const closing = quiz.closingSlide ?? DEFAULT_CLOSING_SLIDE;
+
+  function updateClosing(patch: Partial<ClosingSlideSettings>) {
+    updateQuiz(quiz.id, { closingSlide: { ...closing, ...patch } });
+  }
+
+  function updateWinner(key: keyof ClosingWinners, value: string) {
+    updateClosing({ winners: { ...closing.winners, [key]: value } });
+  }
 
   function applyTemplate() {
     const current = quiz.description ?? emptyLocalizedText();
@@ -107,6 +123,103 @@ export function QuizSettingsPanel({ quiz }: { quiz: Quiz }) {
         mediaId={quiz.answerBackgroundImageId}
         onChange={(answerBackgroundImageId) => updateQuiz(quiz.id, { answerBackgroundImageId })}
       />
+
+      <div>
+        <p className="mb-2 text-xs font-medium text-muted-foreground">{t("closingSlideLabel")}</p>
+        <label className="mb-2 flex items-center gap-2 text-xs font-medium text-foreground">
+          <input
+            type="checkbox"
+            checked={closing.enabled}
+            onChange={(e) => updateClosing({ enabled: e.target.checked })}
+            className="accent-accent"
+          />
+          {t("closingSlideEnableLabel")}
+        </label>
+        <p className="mb-3 text-[11px] text-muted-foreground/70">{t("closingSlideEnableHint")}</p>
+
+        {closing.enabled && (
+          <div className="flex flex-col gap-6 rounded-xl border border-border bg-surface-2/40 p-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                {t("closingTitleLabel")} <span className="text-muted-foreground/50">{t("optional")}</span>
+              </label>
+              <LocalizedRichTextEditor
+                value={closing.title ?? emptyLocalizedText()}
+                placeholder={t("closingDefaultTitle")}
+                onChange={(title) => updateClosing({ title })}
+                minimal
+              />
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                {t("closingMessageLabel")} <span className="text-muted-foreground/50">{t("optional")}</span>
+              </label>
+              <LocalizedRichTextEditor
+                value={closing.message ?? emptyLocalizedText()}
+                placeholder={t("closingMessagePlaceholder")}
+                onChange={(message) => updateClosing({ message })}
+                minimal
+              />
+            </div>
+
+            <BackgroundImageField
+              label={t("closingBackgroundLabel")}
+              hint={t("closingBackgroundHint")}
+              mediaId={closing.backgroundImageId}
+              onChange={(backgroundImageId) => updateClosing({ backgroundImageId })}
+            />
+
+            <div>
+              <label className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <input
+                  type="checkbox"
+                  checked={closing.showRanking}
+                  onChange={(e) => updateClosing({ showRanking: e.target.checked })}
+                  className="accent-accent"
+                />
+                {t("closingShowRankingLabel")}
+              </label>
+
+              {closing.showRanking && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground">
+                      {t("firstPlaceLabel")}
+                    </label>
+                    <Input
+                      value={closing.winners?.first ?? ""}
+                      onChange={(e) => updateWinner("first", e.target.value)}
+                      placeholder={t("teamNamePlaceholder")}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground">
+                      {t("secondPlaceLabel")}
+                    </label>
+                    <Input
+                      value={closing.winners?.second ?? ""}
+                      onChange={(e) => updateWinner("second", e.target.value)}
+                      placeholder={t("teamNamePlaceholder")}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-medium text-muted-foreground">
+                      {t("thirdPlaceLabel")}
+                    </label>
+                    <Input
+                      value={closing.winners?.third ?? ""}
+                      onChange={(e) => updateWinner("third", e.target.value)}
+                      placeholder={t("teamNamePlaceholder")}
+                    />
+                  </div>
+                </div>
+              )}
+              <p className="mt-1.5 text-[11px] text-muted-foreground/70">{t("closingShowRankingHint")}</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div>
         <p className="mb-2 text-xs font-medium text-muted-foreground">{t("waveformStyleLabel")}</p>

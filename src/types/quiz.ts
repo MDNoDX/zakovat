@@ -313,6 +313,40 @@ export interface Stage {
   updatedAt: number;
 }
 
+/** The winning team name(s), entered live by the moderator once scoring
+ * (done outside the app — e.g. tallying paper answer cards) is finished.
+ * Plain strings, not LocalizedText: team names aren't translated. */
+export interface ClosingWinners {
+  first?: string;
+  second?: string;
+  third?: string;
+}
+
+/** Settings for the optional closing/final slide shown at the very end of
+ * the whole presentation, after the last stage's last slide — the natural
+ * place to announce the winner(s) and thank the audience. Disabled by
+ * default so existing quizzes are unaffected until turned on. */
+export interface ClosingSlideSettings {
+  enabled: boolean;
+  /** Falls back to a generic "Thank you" style title when empty. */
+  title?: LocalizedText;
+  /** Optional congratulatory/closing message shown under the title. */
+  message?: LocalizedText;
+  /** Falls back to the quiz's own `backgroundImageId` when unset. */
+  backgroundImageId?: string | null;
+  /** Whether to show the 1st/2nd/3rd place fields at all. */
+  showRanking: boolean;
+  /** Can be pre-filled in Quiz Settings, or edited directly on the slide
+   * during presentation (the names usually aren't known until the event's
+   * scoring is done). */
+  winners?: ClosingWinners;
+}
+
+export const DEFAULT_CLOSING_SLIDE: ClosingSlideSettings = {
+  enabled: false,
+  showRanking: true,
+};
+
 export interface Quiz {
   id: string;
   title: string;
@@ -334,6 +368,10 @@ export interface Quiz {
    * `backgroundImageId` of its own. Falls back to the stage's and then the
    * quiz's regular `backgroundImageId` when unset. */
   answerBackgroundImageId?: string | null;
+  /** Optional closing/final slide shown once, after the very last stage's
+   * last slide. Absent or `enabled: false` means the presentation simply
+   * ends on the last answer slide as before. */
+  closingSlide?: ClosingSlideSettings;
   stages: Stage[];
   defaultLanguage: Language;
   createdAt: number;

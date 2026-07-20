@@ -9,7 +9,11 @@ export type Slide =
   // correct answer appears.
   | { kind: "recap"; stage: Stage; question: Question; indexInStage: number; total: number }
   | { kind: "answer"; stage: Stage; question: Question; indexInStage: number; total: number }
-  | { kind: "stage-end"; stage: Stage };
+  | { kind: "stage-end"; stage: Stage }
+  // One-time closing slide, appended once at the very end of the whole
+  // presentation (not per-stage) — only present when the quiz has opted
+  // into it via `quiz.closingSlide.enabled`.
+  | { kind: "final"; quiz: Quiz };
 
 export function buildSlides(quiz: Quiz): Slide[] {
   const slides: Slide[] = [];
@@ -66,6 +70,10 @@ export function buildSlides(quiz: Quiz): Slide[] {
         });
       });
     }
+  }
+
+  if (quiz.closingSlide?.enabled) {
+    slides.push({ kind: "final", quiz });
   }
 
   return slides;
