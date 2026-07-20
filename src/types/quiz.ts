@@ -342,6 +342,19 @@ export interface Quiz {
 
 export type MediaKind = "image" | "video" | "audio";
 
+/** Marks a MediaItem as an embedded external source (currently just
+ * YouTube) instead of a downloaded blob in IndexedDB — there's no way for
+ * an in-browser app with no server to actually download a YouTube video's
+ * file, so this is rendered as a live YouTube iframe wherever the item
+ * would normally play. `getMediaObjectUrl`/`useMediaUrl` correctly return
+ * null for these (no blob exists); every render site that plays media must
+ * check this field first. */
+export interface ExternalEmbed {
+  provider: "youtube";
+  videoId: string;
+  url: string;
+}
+
 export interface MediaItem {
   id: string;
   kind: MediaKind;
@@ -354,6 +367,7 @@ export interface MediaItem {
   height?: number;
   /** Optional short caption shown alongside this clip during presentation. */
   caption?: string;
+  externalEmbed?: ExternalEmbed;
 }
 
 export const QUESTION_TYPE_META: Record<

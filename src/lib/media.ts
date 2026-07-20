@@ -71,7 +71,7 @@ export function useMediaUrl(mediaId: string | null | undefined): string | null {
   return url;
 }
 
-export function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+export function readImageDimensions(file: Blob): Promise<{ width: number; height: number }> {
   return new Promise((resolve) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);

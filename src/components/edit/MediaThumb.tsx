@@ -81,6 +81,26 @@ export function MediaThumb({
     );
   }
 
+  if (item.externalEmbed?.provider === "youtube") {
+    // No blob to preview-play inline here -- a static thumbnail (YouTube's
+    // own public, CORS-friendly thumbnail image, no API key needed) plus a
+    // badge is enough to identify it in the grid; the real player shows up
+    // wherever it's actually attached to a question/answer.
+    return (
+      <div className={cn("relative overflow-hidden bg-black", className)}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`https://img.youtube.com/vi/${item.externalEmbed.videoId}/hqdefault.jpg`}
+          alt={item.name}
+          className="h-full w-full object-cover"
+        />
+        <span className="absolute bottom-1 right-1 rounded bg-red-600 px-1 py-0.5 text-[9px] font-bold uppercase leading-none text-white">
+          YouTube
+        </span>
+      </div>
+    );
+  }
+
   if (item.kind === "video") {
     return (
       <div className={cn("relative overflow-hidden bg-black", className)}>

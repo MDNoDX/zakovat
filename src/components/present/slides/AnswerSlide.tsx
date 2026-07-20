@@ -12,6 +12,7 @@ import { isLocalizedTextEmpty, type Question, type Language } from "@/types/quiz
 import { MultipleChoiceSlide } from "@/components/present/slides/MultipleChoiceSlide";
 import { Collage } from "@/components/present/slides/MultiImageSlide";
 import { MultiLangText } from "@/components/present/MultiLangText";
+import { EmbeddableVideo } from "@/components/present/EmbeddableVideo";
 import { tFor } from "@/lib/i18n";
 
 export function AnswerSlide({
@@ -141,8 +142,8 @@ function GenericAnswer({
     // for a consistent full-screen-impact option on the answer too.
     return (
       <div className="relative h-full w-full overflow-hidden bg-black">
-        {url && mediaKind === "video" && (
-          <video key={question.answer.mediaId} src={url} controls className="h-full w-full object-cover" />
+        {mediaKind === "video" && (
+          <EmbeddableVideo mediaId={question.answer.mediaId} className="h-full w-full object-cover" />
         )}
         {url && mediaKind === "image" && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -162,12 +163,10 @@ function GenericAnswer({
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-6 px-16 text-center">
       {textContent}
-      {url && mediaKind === "video" && (
-        <video
-          key={question.answer.mediaId}
-          src={url}
-          controls
-          className={`w-auto rounded-2xl border border-white/10 bg-black object-contain shadow-soft ${sizeBoxClass}`}
+      {mediaKind === "video" && (
+        <EmbeddableVideo
+          mediaId={question.answer.mediaId}
+          className={`aspect-video w-auto rounded-2xl border border-white/10 bg-black object-contain shadow-soft ${sizeBoxClass}`}
         />
       )}
       {url && mediaKind === "audio" && (

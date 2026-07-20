@@ -8,6 +8,7 @@ import { MultiLangText } from "@/components/present/MultiLangText";
 import { useMediaUrl } from "@/lib/media";
 import { useQuizStore } from "@/lib/store";
 import { MediaCaption, useMediaCaption } from "@/components/present/MediaCaption";
+import { EmbeddableVideo } from "@/components/present/EmbeddableVideo";
 import { cn } from "@/lib/utils";
 
 const LETTERS = ["A", "B", "C", "D", "E", "F"];
@@ -32,13 +33,11 @@ export function MultipleChoiceSlide({
       {url && mediaKind === "audio" && (
         <audio key={question.mediaId} src={url} controls className="w-full max-w-md" />
       )}
-      {url && mediaKind === "video" && (
-        <video
-          key={question.mediaId}
-          src={url}
-          controls
+      {mediaKind === "video" && (
+        <EmbeddableVideo
+          mediaId={question.mediaId}
           className={cn(
-            "rounded-2xl border border-white/10 bg-black shadow-soft",
+            "aspect-video rounded-2xl border border-white/10 bg-black shadow-soft",
             isCover ? "h-[38vh] w-full max-w-4xl object-cover" : "max-h-[35vh] w-full max-w-3xl"
           )}
         />

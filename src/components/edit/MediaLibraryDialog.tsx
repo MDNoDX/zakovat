@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UploadCloud, Trash2, Check, Pencil, Scissors } from "lucide-react";
+import { UploadCloud, Trash2, Check, Pencil, Scissors, Link as LinkIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useQuizStore } from "@/lib/store";
 import { mediaKindFromMime, readImageDimensions, saveMediaBlob, deleteMediaBlob } from "@/lib/media";
+import {
+  isYouTubeUrl,
+  parseYouTubeId,
+  fetchYouTubeTitle,
+  fetchExternalMediaBlob,
+} from "@/lib/media-url";
 import { uid } from "@/lib/utils";
 import type { MediaItem, MediaKind } from "@/types/quiz";
 import { MediaThumb } from "@/components/edit/MediaThumb";
@@ -52,6 +59,9 @@ export function MediaLibraryDialog({
   const [uploading, setUploading] = useState(false);
   const [trimTarget, setTrimTarget] = useState<MediaItem | null>(null);
   const [lockAudioOnly, setLockAudioOnly] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [urlBusy, setUrlBusy] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
   const t = useT();
 
   function openExtractionTrim(item: MediaItem) {
@@ -60,6 +70,79 @@ export function MediaLibraryDialog({
   }
 
   const allowedKinds = filterKind ? (Array.isArray(filterKind) ? filterKind : [filterKind]) : null;
+
+  function selectNewItem(id: string) {
+    if (multiple) setPicked((p) => [...p, id]);
+    else setPicked([id]);
+  }
+
+  async function handleAddUrl() {
+    const raw = urlInput.trim();
+    if (!raw) return;
+    setUrlBusy(true);
+    setUrlError(null);
+    try {
+      if (isYouTubeUrl(raw)) {
+        const videoId = parseYouTubeId(raw);
+        if (!videoId) {
+          setUrlError(t("urlInvalidYoutube"));
+          return;
+        }
+        if (allowedKinds && !allowedKinds.includes("video")) {
+          setUrlError(t("urlKindMismatch"));
+          return;
+        }
+        const title = await fetchYouTubeTitle(videoId);
+        const item: MediaItem = {
+          id: uid(),
+          kind: "video",
+          name: title || "YouTube video",
+          mimeType: "video/youtube",
+          size: 0,
+          createdAt: Date.now(),
+          externalEmbed: { provider: "youtube", videoId, url: raw },
+        };
+        addMedia(item);
+        if (forceAudioExtraction) {
+          // There's no blob to extract audio from an embed -- surface why
+          // instead of silently dropping it or forcing a nonsensical trim.
+          setUrlError(t("urlYoutubeNoExtract"));
+          return;
+        }
+        selectNewItem(item.id);
+        setUrlInput("");
+      } else {
+        const { blob, kind, mimeType, name } = await fetchExternalMediaBlob(raw);
+        if (allowedKinds && !allowedKinds.includes(kind)) {
+          setUrlError(t("urlKindMismatch"));
+          return;
+        }
+        const id = uid();
+        await saveMediaBlob(id, blob);
+        const dims = kind === "image" ? await readImageDimensions(blob) : undefined;
+        const item: MediaItem = {
+          id,
+          kind,
+          name,
+          mimeType,
+          size: blob.size,
+          createdAt: Date.now(),
+          ...dims,
+        };
+        addMedia(item);
+        if (forceAudioExtraction && kind === "video") {
+          openExtractionTrim(item);
+        } else {
+          selectNewItem(id);
+        }
+        setUrlInput("");
+      }
+    } catch {
+      setUrlError(t("urlAddFailed"));
+    } finally {
+      setUrlBusy(false);
+    }
+  }
   const items = allowedKinds ? media.filter((m) => allowedKinds.includes(m.kind)) : media;
 
   const MIME_BY_KIND: Record<MediaKind, string> = {
@@ -139,11 +222,47 @@ export function MediaLibraryDialog({
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="mb-4 flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface-2 py-6 text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground"
+          className="mb-3 flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface-2 py-6 text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground"
         >
           <UploadCloud className="h-5 w-5" />
           <span className="text-xs">{uploading ? t("uploading") : t("clickToUpload")}</span>
         </button>
+
+        <div className="mb-4">
+          <div className="flex gap-1.5">
+            <div className="relative flex-1">
+              <LinkIcon className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={urlInput}
+                onChange={(e) => {
+                  setUrlInput(e.target.value);
+                  if (urlError) setUrlError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddUrl();
+                  }
+                }}
+                placeholder={t("urlInputPlaceholder")}
+                className="pl-8 text-xs"
+              />
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={urlBusy || !urlInput.trim()}
+              onClick={handleAddUrl}
+            >
+              {urlBusy ? t("urlAdding") : t("urlAddButton")}
+            </Button>
+          </div>
+          {urlError ? (
+            <p className="mt-1.5 text-[11px] text-red-400">{urlError}</p>
+          ) : (
+            <p className="mt-1.5 text-[11px] text-muted-foreground/70">{t("urlInputHint")}</p>
+          )}
+        </div>
 
         <div className="grid max-h-72 grid-cols-4 gap-2 overflow-y-auto">
           {items.length === 0 && (
@@ -195,7 +314,8 @@ export function MediaLibraryDialog({
                   >
                     <Pencil className="h-3 w-3" />
                   </button>
-                  {(item.kind === "video" || item.kind === "audio" || item.kind === "image") && (
+                  {(item.kind === "video" || item.kind === "audio" || item.kind === "image") &&
+                    !item.externalEmbed && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

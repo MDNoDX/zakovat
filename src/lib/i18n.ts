@@ -189,6 +189,38 @@ export const UI_STRINGS = {
     en: "Delete this file?",
   },
   select: { uz: "Tanlash", ru: "Выбрать", en: "Select" },
+  urlInputPlaceholder: {
+    uz: "YouTube havolasi yoki fayl URL manzili...",
+    ru: "Ссылка YouTube или URL файла...",
+    en: "YouTube link or file URL...",
+  },
+  urlInputHint: {
+    uz: "YouTube havolasi bo'lsa, video o'rnatib qo'yiladi (embed); boshqa to'g'ridan-to'g'ri fayl havolasi bo'lsa, yuklab olinadi",
+    ru: "Ссылка YouTube будет встроена как видео; прямая ссылка на файл будет загружена как обычный файл",
+    en: "A YouTube link gets embedded as video; a direct file link gets downloaded like an upload",
+  },
+  urlAddButton: { uz: "Qo'shish", ru: "Добавить", en: "Add" },
+  urlAdding: { uz: "Qo'shilmoqda...", ru: "Добавление...", en: "Adding..." },
+  urlInvalidYoutube: {
+    uz: "Bu YouTube havolasidan videoni aniqlab bo'lmadi",
+    ru: "Не удалось распознать видео по этой ссылке YouTube",
+    en: "Couldn't recognize a video from this YouTube link",
+  },
+  urlKindMismatch: {
+    uz: "Bu turdagi media shu joyga mos kelmaydi",
+    ru: "Этот тип медиа не подходит для этого поля",
+    en: "This media type isn't accepted here",
+  },
+  urlYoutubeNoExtract: {
+    uz: "YouTube videosidan audio ajratib bo'lmaydi — kutubxonaga qo'shildi, lekin bu maydonga ulanmadi",
+    ru: "Извлечь аудио из видео YouTube нельзя — оно добавлено в библиотеку, но не подключено к этому полю",
+    en: "Audio can't be extracted from a YouTube embed — added to the library, but not attached to this field",
+  },
+  urlAddFailed: {
+    uz: "Bu havoladan media qo'shib bo'lmadi. Havola to'g'riligini yoki sayt ruxsatini tekshiring.",
+    ru: "Не удалось добавить медиа по этой ссылке. Проверьте ссылку или разрешения сайта.",
+    en: "Couldn't add media from this link. Check the URL, or the source site may not allow it.",
+  },
   editCaption: { uz: "Sarlavha qo'shish", ru: "Добавить подпись", en: "Add caption" },
   captionPromptMessage: {
     uz: "Ushbu media uchun qisqa matn (ixtiyoriy):",

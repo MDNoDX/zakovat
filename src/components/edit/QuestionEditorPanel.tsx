@@ -562,6 +562,7 @@ function SingleMediaField({
   const url = useMediaUrl(mediaId);
   const media = useQuizStore((s) => s.media);
   const item = media.find((m) => m.id === mediaId) ?? null;
+  const isEmbed = !!item?.externalEmbed;
   const Icon = kind === "audio" ? Music : kind === "video" ? Video : ImageIcon;
   const [trimOpen, setTrimOpen] = useState(false);
   const t = useT();
@@ -571,7 +572,9 @@ function SingleMediaField({
   // only flips to "actually broken" if it's *still* null a while later,
   // so a real failure shows a clear, actionable error instead of quietly
   // looking identical to "nothing was ever attached" (which is confusing:
-  // the field clearly has *something* attached, it just won't load).
+  // the field clearly has *something* attached, it just won't load). An
+  // embedded item (YouTube) never has a blob by design, so it's excluded
+  // from this check entirely — no blob there is correct, not broken.
   const [stalled, setStalled] = useState(false);
   useEffect(() => {
     setStalled(false);
@@ -579,7 +582,7 @@ function SingleMediaField({
     const timer = setTimeout(() => setStalled(true), 1500);
     return () => clearTimeout(timer);
   }, [mediaId]);
-  const isBroken = !!mediaId && !url && stalled;
+  const isBroken = !!mediaId && !url && !isEmbed && stalled;
 
   return (
     <div>
@@ -603,21 +606,33 @@ function SingleMediaField({
             </button>
           </div>
         </div>
-      ) : mediaId && url ? (
+      ) : mediaId && (url || isEmbed) ? (
         <div className="group relative w-full max-w-xs overflow-hidden rounded-xl border border-border">
-          {kind === "image" && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt="" className="max-h-52 w-full object-cover" />
-          )}
-          {kind === "video" && <video src={url} className="max-h-52 w-full" controls />}
-          {kind === "audio" && (
-            <div className="flex items-center gap-2 p-3">
-              <Music className="h-4 w-4 text-accent" />
-              <audio src={url} controls className="h-8 flex-1" />
-            </div>
+          {isEmbed && item?.externalEmbed ? (
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${item.externalEmbed.videoId}?rel=0&modestbranding=1`}
+              title={item.name || "YouTube video"}
+              className="aspect-video w-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <>
+              {kind === "image" && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={url ?? undefined} alt="" className="max-h-52 w-full object-cover" />
+              )}
+              {kind === "video" && <video src={url ?? undefined} className="max-h-52 w-full" controls />}
+              {kind === "audio" && (
+                <div className="flex items-center gap-2 p-3">
+                  <Music className="h-4 w-4 text-accent" />
+                  <audio src={url ?? undefined} controls className="h-8 flex-1" />
+                </div>
+              )}
+            </>
           )}
           <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-            {onTrimmed && item && (kind === "audio" || kind === "video" || kind === "image") && (
+            {onTrimmed && item && !isEmbed && (kind === "audio" || kind === "video" || kind === "image") && (
               <button
                 onClick={() => setTrimOpen(true)}
                 className="rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
@@ -810,10 +825,22 @@ function MultiImageEditor({
   const media = useQuizStore((s) => s.media);
   const t = useT();
   const uiLanguage = useUiLanguageStore((s) => s.language);
+  // Editing a collage tile in place: crop it and swap that exact slot's id
+  // for the new cropped copy, instead of only being able to remove-and-
+  // re-add from the library like every other spot in the app already lets
+  // you do for a single media field.
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const editItem = editIndex !== null ? media.find((m) => m.id === mediaIds[editIndex]) ?? null : null;
 
   function removeAt(index: number) {
     const next = mediaIds.slice();
     next.splice(index, 1);
+    onChangeIds(next);
+  }
+
+  function replaceAt(index: number, newId: string) {
+    const next = mediaIds.slice();
+    next[index] = newId;
     onChangeIds(next);
   }
 
@@ -834,13 +861,23 @@ function MultiImageEditor({
                   {i + 1}
                 </span>
               )}
-              <button
-                onClick={() => removeAt(i)}
-                aria-label={t("delete")}
-                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-              >
-                <X className="h-3 w-3" />
-              </button>
+              <div className="absolute right-1 top-1 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <button
+                  onClick={() => setEditIndex(i)}
+                  aria-label={t("trimMedia")}
+                  title={t("trimMedia")}
+                  className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                >
+                  <Scissors className="h-3 w-3" />
+                </button>
+                <button
+                  onClick={() => removeAt(i)}
+                  aria-label={t("delete")}
+                  className="flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           );
         })}
@@ -851,6 +888,16 @@ function MultiImageEditor({
           <Plus className="h-4 w-4" />
         </button>
       </div>
+
+      <MediaTrimDialog
+        item={editItem}
+        open={editIndex !== null}
+        onOpenChange={(o) => !o && setEditIndex(null)}
+        onSaved={(newItem) => {
+          if (editIndex !== null) replaceAt(editIndex, newItem.id);
+          setEditIndex(null);
+        }}
+      />
 
       {mediaIds.length > 1 && (
         <div className="mt-3 flex gap-1.5">

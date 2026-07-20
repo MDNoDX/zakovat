@@ -172,6 +172,38 @@ export async function importBackup(file: File): Promise<ImportResult> {
 
   for (const item of rawMediaList) {
     if (!isPlainObject(item) || typeof item.id !== "string") continue;
+
+    // Embedded external media (YouTube) never has a blob to begin with --
+    // that's not a corrupt entry, it's copied through as-is with a fresh id
+    // instead of being skipped for "missing" blob data it was never going
+    // to have. Everything else still requires its blob to be present.
+    const embed = isPlainObject(item.externalEmbed) ? item.externalEmbed : null;
+    const isEmbed =
+      embed &&
+      embed.provider === "youtube" &&
+      typeof embed.videoId === "string" &&
+      typeof embed.url === "string";
+
+    if (isEmbed) {
+      const newId = uid();
+      useQuizStore.getState().addMedia({
+        id: newId,
+        kind: "video",
+        name: typeof item.name === "string" ? item.name : "YouTube video",
+        mimeType: "video/youtube",
+        size: 0,
+        createdAt: Date.now(),
+        externalEmbed: {
+          provider: "youtube",
+          videoId: embed.videoId as string,
+          url: embed.url as string,
+        },
+      });
+      mediaIdMap.set(item.id, newId);
+      mediaAdded++;
+      continue;
+    }
+
     const dataUrl = rawBlobs[item.id];
     if (typeof dataUrl !== "string") continue;
     const newId = uid();
