@@ -155,6 +155,43 @@ export function RichTextEditor({
           <UnderlineIcon className="h-3.5 w-3.5" />
         </ToolbarButton>
 
+        <Divider />
+        <div className="flex items-center gap-0.5 px-0.5">
+          <Type className="h-3.5 w-3.5 text-muted-foreground" />
+          {sizeValue !== undefined && onSizeChange ? (
+            // Whole-field tier mode: one size for the entire text, always
+            // visibly reflecting what's currently active — no per-run
+            // marks to accidentally leave inconsistent across languages.
+            PROMPT_SIZES.map((tier) => (
+              <button
+                key={tier}
+                type="button"
+                title={promptSizeLabel(tier, uiLanguage)}
+                onClick={() => onSizeChange(tier)}
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors",
+                  sizeValue === tier
+                    ? "bg-accent/15 text-accent"
+                    : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+                )}
+              >
+                {SIZE_TIER_LABEL[tier]}
+              </button>
+            ))
+          ) : (
+            FONT_SIZES.map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => editor.chain().focus().setFontSize(f.value).run()}
+                className="rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
+              >
+                {f.label}
+              </button>
+            ))
+          )}
+        </div>
+
         {!minimal && (
           <>
             <Divider />
@@ -191,42 +228,6 @@ export function RichTextEditor({
             <ToolbarButton onClick={setLink} active={editor.isActive("link")} label={t("toolbarLink")}>
               <LinkIcon className="h-3.5 w-3.5" />
             </ToolbarButton>
-            <Divider />
-            <div className="flex items-center gap-0.5 px-0.5">
-              <Type className="h-3.5 w-3.5 text-muted-foreground" />
-              {sizeValue !== undefined && onSizeChange ? (
-                // Whole-field tier mode: one size for the entire text, always
-                // visibly reflecting what's currently active — no per-run
-                // marks to accidentally leave inconsistent across languages.
-                PROMPT_SIZES.map((tier) => (
-                  <button
-                    key={tier}
-                    type="button"
-                    title={promptSizeLabel(tier, uiLanguage)}
-                    onClick={() => onSizeChange(tier)}
-                    className={cn(
-                      "rounded px-1.5 py-0.5 text-[11px] font-medium transition-colors",
-                      sizeValue === tier
-                        ? "bg-accent/15 text-accent"
-                        : "text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
-                    )}
-                  >
-                    {SIZE_TIER_LABEL[tier]}
-                  </button>
-                ))
-              ) : (
-                FONT_SIZES.map((f) => (
-                  <button
-                    key={f.value}
-                    type="button"
-                    onClick={() => editor.chain().focus().setFontSize(f.value).run()}
-                    className="rounded px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
-                  >
-                    {f.label}
-                  </button>
-                ))
-              )}
-            </div>
             <Divider />
             <div className="flex items-center gap-1 px-1">
               {SWATCHES.map((c) => (
