@@ -98,14 +98,6 @@ export function QuestionEditorPanel({
     question.type === "music" ||
     question.type === "video" ||
     question.type === "multiple-choice";
-  const currentMediaKind: "image" | "audio" | "video" =
-    question.type === "music"
-      ? "audio"
-      : question.type === "video"
-      ? "video"
-      : question.type === "multiple-choice"
-      ? media.find((m) => m.id === question.mediaId)?.kind ?? "image"
-      : "image";
   const currentMediaId =
     question.type === "image" ||
     question.type === "music" ||
@@ -113,6 +105,16 @@ export function QuestionEditorPanel({
     question.type === "multiple-choice"
       ? question.mediaId
       : null;
+  // The attached media item's *own* kind is the source of truth for what
+  // to actually render (image/audio/video player) — not question.type.
+  // These two are supposed to always agree (picking/trimming media patches
+  // both together), but trusting the real item here means the editor keeps
+  // showing/working correctly even in the one-in-a-million case they ever
+  // drift apart, instead of pointing an <video> tag at an audio file (or
+  // vice versa) and silently rendering nothing.
+  const currentMediaKind: "image" | "audio" | "video" =
+    (currentMediaId ? media.find((m) => m.id === currentMediaId)?.kind : undefined) ??
+    (question.type === "music" ? "audio" : question.type === "video" ? "video" : "image");
   const currentDisplaySize: MediaDisplaySize =
     (question.type === "image" || question.type === "video" || question.type === "multiple-choice"
       ? question.displaySize
@@ -132,7 +134,12 @@ export function QuestionEditorPanel({
       patch({ type: "text", mediaId: null, startAt: undefined, displaySize: undefined });
       return;
     }
-    const kind = kindHint ?? media.find((m) => m.id === id)?.kind ?? "image";
+    // Reads the store directly (not the `media` closed over from this
+    // render) — the item was just added a moment ago via `addMedia`, and a
+    // stale render's snapshot might not have it yet, which previously
+    // could leave `kind` falling through to the "image" default and the
+    // question's type never actually switching to match the real media.
+    const kind = useQuizStore.getState().media.find((m) => m.id === id)?.kind ?? kindHint ?? "image";
     const newType = kind === "audio" ? "music" : kind === "video" ? "video" : "image";
     patch({ type: newType, mediaId: id });
   }
