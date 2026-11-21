@@ -1,22 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  async headers() {
-    return [
-      {
-        // Defense-in-depth hardening. This app has no backend/API and no
-        // secrets to leak, but these headers close off clickjacking and
-        // MIME-sniffing as cheap, standard precautions.
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-        ],
-      },
-    ];
-  },
+  // Static export, served by Cloudflare Workers static assets (see
+  // wrangler.jsonc). The app has no backend/API: quizzes live in the
+  // browser (IndexedDB). Security headers moved to public/_headers and the
+  // dynamic quiz routes are handled by public/_redirects.
+  output: "export",
 };
 
 export default nextConfig;
